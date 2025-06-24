@@ -8,6 +8,8 @@ import com.rgbradford.backend.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import com.rgbradford.backend.entity.User;
+import com.rgbradford.backend.exception.ResourceNotFoundException;
 
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -22,8 +24,18 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthResponse register(RegisterRequest request) {
-        //TODO: Implement registration logic
-        return null;
+        if (userRepository.findByEmail(request.getEmail()).isPresent()) {
+            throw new RuntimeException("Email already in use: " + request.getEmail());
+        }
+        
+        String hashedPassword = passwordEncoder.encode(request.getPassword());
+        User user = User.builder()
+                .email(request.getEmail())
+                .password(hashedPassword)
+                .build();
+        userRepository.save(user);
+        // TODO: Replace with real JWT token
+        return new AuthResponse("dummy-token");
     }
 
     @Override
