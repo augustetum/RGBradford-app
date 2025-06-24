@@ -9,7 +9,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import com.rgbradford.backend.entity.User;
-import com.rgbradford.backend.exception.ResourceNotFoundException;
 
 @Service
 public class AuthenticationServiceImpl implements AuthenticationService {
@@ -40,7 +39,14 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
     @Override
     public AuthResponse login(LoginRequest request) {
-        //TODO: Implement login logic
-        return null;
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + request.getEmail()));
+        
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password for user: " + request.getEmail());
+        }
+        
+        // TODO: Replace with real JWT token
+        return new AuthResponse("dummy-token");
     }
 } 
