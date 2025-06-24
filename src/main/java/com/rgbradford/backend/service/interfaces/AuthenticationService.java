@@ -1,8 +1,8 @@
 package com.rgbradford.backend.service.interfaces;
 
-import com.rgbradford.backend.service.dto.RegisterRequest;
-import com.rgbradford.backend.service.dto.LoginRequest;
-import com.rgbradford.backend.service.dto.AuthResponse;
+import com.rgbradford.backend.dto.request.RegisterRequest;
+import com.rgbradford.backend.dto.request.LoginRequest;
+import com.rgbradford.backend.dto.response.AuthResponse;
 
 public interface AuthenticationService {
     AuthResponse register(RegisterRequest request);
