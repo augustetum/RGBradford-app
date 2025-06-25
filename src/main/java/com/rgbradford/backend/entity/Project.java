@@ -28,6 +28,11 @@ public class Project {
     @Column(name = "picture_file_path")
     private String pictureFilePath;
 
+    // The user who owns this project
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
     @Column(nullable = false, updatable = false)
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
