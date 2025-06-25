@@ -1,0 +1,14 @@
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/RgBradfordBackendApplication.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/config/SecurityConfig.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/controller/AuthController.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/dto/request/LoginRequest.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/dto/request/RefreshTokenRequest.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/dto/request/RegisterRequest.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/dto/response/AuthResponse.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/entity/User.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/repository/UserRepository.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/security/CustomUserDetailsService.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/security/JwtAuthenticationFilter.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/security/JwtTokenProvider.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/service/impl/AuthenticationServiceImpl.java
+/Users/augustetumaite/repos/RGBradford-app/src/main/java/com/rgbradford/backend/service/interfaces/AuthenticationService.java
