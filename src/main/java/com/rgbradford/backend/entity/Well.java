@@ -27,15 +27,20 @@ public class Well {
     @Column(nullable = false)
     private WellType type;
 
-    // For STANDARD wells
+    //Standard wells additional field
     private Double standardConcentration;
 
-    // For SAMPLE wells
+    //Sample wells additional fields
     private String sampleName;
     private Double dilutionFactor;
 
-    // For grouping replicates
+    //Groups of replicates (optional)
     private String replicateGroup;
+
+    //Image analysis results
+    private String rgbValue;           //Raw RGB values from image
+    private Double blueGreenRatio;     //Calculated B/G ratio
+    private Double calculatedConcentration; //Final calculated concentration (for samples)
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "plate_layout_id", nullable = false)
