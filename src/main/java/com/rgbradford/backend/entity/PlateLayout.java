@@ -27,11 +27,12 @@ public class PlateLayout {
     @OneToMany(mappedBy = "plateLayout", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Well> wells;
 
-    // One calibration curve per plate (derived from standards on this plate)
+    //One calibration curve per plate (derived from standards on this plate)
     @OneToOne(mappedBy = "plateLayout", cascade = CascadeType.ALL, orphanRemoval = true)
     private CalibrationCurve calibrationCurve;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    // One project per plate layout
+    @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
 } 

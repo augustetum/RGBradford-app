@@ -28,7 +28,7 @@ public class Project {
     @Column(name = "picture_file_path")
     private String pictureFilePath;
 
-    // The user who owns this project
+    //The user who owns this project
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -37,9 +37,9 @@ public class Project {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    //One project can have many plate layouts (or plates, in other words)
-    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<PlateLayout> plateLayouts;
+    //One project has one plate layout (or plate)
+    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    private PlateLayout plateLayout;
 
     //PrePersist is used for timestamping the creation of the project BEFORE it is saved to the database
     @PrePersist
