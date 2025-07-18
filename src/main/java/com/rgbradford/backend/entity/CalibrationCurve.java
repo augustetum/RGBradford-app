@@ -18,11 +18,6 @@ public class CalibrationCurve {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
-    private String name;
-
-    private String description;
-
     //Mathematical parameters of the calibration curve (y = mx + b)
     @Column(nullable = false)
     private Double slope; //m
