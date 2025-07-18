@@ -1,7 +1,10 @@
 package com.rgbradford.backend.service.interfaces;
 
 import com.rgbradford.backend.dto.request.PlateAnalysisParams;
+import com.rgbradford.backend.dto.response.WellAnalysisResult;
+
+import java.util.List;
 
 public interface PlateAnalysisService {
-    String analyzePlate(String imagePath, PlateAnalysisParams params) throws Exception;
+    List<WellAnalysisResult> analyzePlate(String imagePath, PlateAnalysisParams params) throws Exception;
 } 
