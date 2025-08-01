@@ -1,5 +1,7 @@
 import com.rgbradford.backend.dto.request.PlateAnalysisParams;
+import com.rgbradford.backend.dto.response.WellAnalysisResult;
 import com.rgbradford.backend.service.impl.PlateAnalysisServiceImpl;
+import java.util.List;
 
 public class PlateAnalysisServiceTest {
     public static void main(String[] args) throws Exception {
@@ -18,8 +20,12 @@ public class PlateAnalysisServiceTest {
         );
 
         PlateAnalysisServiceImpl service = new PlateAnalysisServiceImpl();
-        String resultCsvPath = service.analyzePlate(imagePath, params);
+        List<WellAnalysisResult> results = service.analyzePlate(imagePath, params);
 
-        System.out.println("Analysis complete! Results saved to: " + resultCsvPath);
+        System.out.println("Analysis complete! Found " + results.size() + " wells analyzed.");
+        for (WellAnalysisResult result : results) {
+            System.out.println("Well " + result.getRow() + result.getColumn() + ": RGB(" + 
+                result.getRedValue() + "," + result.getGreenValue() + "," + result.getBlueValue() + ")");
+        }
     }
 }

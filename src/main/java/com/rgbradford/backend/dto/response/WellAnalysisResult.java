@@ -10,15 +10,15 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @Builder
 public class WellAnalysisResult {
-    private String wellId;
-    private String row;
+    private Long id;
+    private Long wellId;
+    private int row;
     private int column;
-    private int xCenter;
-    private int yCenter;
-    private double greenIntensity;
-    private double greenAbsorbance;
-    private double blueIntensity;
-    private double blueAbsorbance;
-    private double gbRatio;
-    private double abRatio;
+    private String wellType;
+    private String sampleName;
+    private Integer redValue;
+    private Integer greenValue;
+    private Integer blueValue;
+    private Double blueGreenRatio;
+    private Double calculatedConcentration;
 } 

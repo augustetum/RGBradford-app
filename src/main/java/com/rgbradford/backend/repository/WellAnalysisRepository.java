@@ -2,6 +2,8 @@ package com.rgbradford.backend.repository;
 
 import com.rgbradford.backend.entity.WellAnalysis;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
@@ -29,4 +31,7 @@ public interface WellAnalysisRepository extends JpaRepository<WellAnalysis, Long
     
     //Find analyses with calculated concentration not null
     List<WellAnalysis> findByCalculatedConcentrationIsNotNull();
+
+    @Query("SELECT wa FROM WellAnalysis wa WHERE wa.well.plateLayout.id = :plateLayoutId")
+    List<WellAnalysis> findByPlateLayoutId(@Param("plateLayoutId") Long plateLayoutId);
 } 

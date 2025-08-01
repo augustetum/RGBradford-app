@@ -88,17 +88,14 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
                         greenAbsorbance / blueAbsorbance : 0;
 
                 WellAnalysisResult result = WellAnalysisResult.builder()
-                        .wellId(wellId)
-                        .row(rowLetter)
+                        .wellId(Long.valueOf(wellId))
+                        .row(Integer.parseInt(rowLetter))
                         .column(col + 1)
-                        .xCenter(centerX)
-                        .yCenter(centerY)
-                        .greenIntensity(measurements.greenMean)
-                        .greenAbsorbance(greenAbsorbance)
-                        .blueIntensity(measurements.blueMean)
-                        .blueAbsorbance(blueAbsorbance)
-                        .gbRatio(gbRatio)
-                        .abRatio(abRatio)
+                        .redValue((int)Math.round(measurements.redMean))
+                        .greenValue((int)Math.round(measurements.greenMean))
+                        .blueValue((int)Math.round(measurements.blueMean))
+                        .blueGreenRatio(gbRatio)
+                        .calculatedConcentration(null) // Will be calculated later
                         .build();
                 results.add(result);
             }
