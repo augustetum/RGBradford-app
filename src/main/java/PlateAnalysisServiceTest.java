@@ -24,8 +24,11 @@ public class PlateAnalysisServiceTest {
 
         System.out.println("Analysis complete! Found " + results.size() + " wells analyzed.");
         for (WellAnalysisResult result : results) {
-            System.out.println("Well " + result.getRow() + result.getColumn() + ": RGB(" + 
-                result.getRedValue() + "," + result.getGreenValue() + "," + result.getBlueValue() + ")");
+            char rowLetter = (char) ('A' + result.getRow());
+            int colNumber = result.getColumn();
+            System.out.println("Well " + rowLetter + colNumber + ": Green=" +
+                result.getGreenValue() + ", Blue=" + result.getBlueValue() +
+                ", Blue/Green Ratio=" + result.getBlueToGreenRatio() + ")");
         }
     }
 }

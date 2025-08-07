@@ -12,7 +12,6 @@ import com.rgbradford.backend.repository.WellAnalysisRepository;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
 import ij.gui.OvalRoi;
-import ij.io.FileSaver;
 import ij.process.ImageConverter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -20,8 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.*;
 import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -35,8 +32,9 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     @Autowired
     private WellAnalysisRepository wellAnalysisRepository;
 
-    // Refactored: returns list of WellAnalysisResult instead of writing CSV
     public List<WellAnalysisResult> analyzePlate(String imagePath, PlateAnalysisParams params) throws Exception {
+        validateParameters(params);
+        
         int columns = params.getColumns();
         int rows = params.getRows();
         int xOrigin = params.getXOrigin();
@@ -44,60 +42,48 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         int xEnd = params.getXEnd();
         int yEnd = params.getYEnd();
 
-        // Use 15% reduction for well diameter to avoid edge effects
+        // Use 15% reduction for well diameter to avoid edge effects (as per protocol)
         int circleSize = (int) Math.round(params.getWellDiameter() * 0.85);
 
-        // Open the image
-        ImagePlus imp = ij.IJ.openImage(imagePath);
-        if (imp == null) {
-            throw new IOException("Could not open image at: " + imagePath);
-        }
-
-        // Ensure RGB
-        if (imp.getType() != ImagePlus.COLOR_RGB) {
-            ImageConverter ic = new ImageConverter(imp);
-            ic.convertToRGB();
-        }
-
+        ImagePlus imp = openAndPrepareImage(imagePath);
+        
         // Calculate grid spacing
         double wellSpacingX = (double)(xEnd - xOrigin) / (columns - 1);
         double wellSpacingY = (double)(yEnd - yOrigin) / (rows - 1);
 
         ImageProcessor processor = imp.getProcessor();
         List<WellAnalysisResult> results = new ArrayList<>();
+        Long counter = 0L;
+        
         for (int row = 0; row < rows; row++) {
             String rowLetter = String.valueOf((char)('A' + row));
             for (int col = 0; col < columns; col++) {
                 int centerX = (int)(xOrigin + col * wellSpacingX);
                 int centerY = (int)(yOrigin + row * wellSpacingY);
-                int roiX = centerX - circleSize/2;
-                int roiY = centerY - circleSize/2;
-                OvalRoi roi = new OvalRoi(roiX, roiY, circleSize, circleSize);
+                
+                OvalRoi roi = createWellROI(centerX, centerY, circleSize);
                 processor.setRoi(roi);
 
                 RGBMeasurements measurements = measureRGBChannels(processor, roi);
+                BradfordCalculations calculations = calculateBradfordValues(measurements);
 
                 String wellId = rowLetter + (col + 1);
-                double greenAbsorbance = (measurements.greenMean > 0) ?
-                        -(Math.log(measurements.greenMean / 255.0) / Math.log(10)) : 999;
-                double blueAbsorbance = (measurements.blueMean > 0) ?
-                        -(Math.log(measurements.blueMean / 255.0) / Math.log(10)) : 999;
-                double gbRatio = (measurements.blueMean > 0) ?
-                        measurements.greenMean / measurements.blueMean : 0;
-                double abRatio = (blueAbsorbance > 0 && blueAbsorbance != 999) ?
-                        greenAbsorbance / blueAbsorbance : 0;
-
+                
                 WellAnalysisResult result = WellAnalysisResult.builder()
-                        .wellId(Long.valueOf(wellId))
-                        .row(Integer.parseInt(rowLetter))
+                        .wellId(counter)
+                        .row(row)
                         .column(col + 1)
-                        .redValue((int)Math.round(measurements.redMean))
                         .greenValue((int)Math.round(measurements.greenMean))
                         .blueValue((int)Math.round(measurements.blueMean))
-                        .blueGreenRatio(gbRatio)
-                        .calculatedConcentration(null) // Will be calculated later
+                        .blueToGreenRatio(calculations.blueToGreenRatio)  // Corrected ratio
+                        .greenAbsorbance(calculations.greenAbsorbance)    // Added absorbance values
+                        .blueAbsorbance(calculations.blueAbsorbance)
+                        .absorbanceRatio(calculations.absorbanceRatio)
+                        .pixelCount(measurements.pixelCount)              // Added for quality control
+                        .calculatedConcentration(null) // Will be calculated later with standard curve
                         .build();
                 results.add(result);
+                counter++;
             }
         }
         imp.close();
@@ -106,16 +92,10 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
 
     @Transactional
     public List<WellAnalysis> analyzeAndPersistPlate(Long plateLayoutId, String imagePath, PlateAnalysisParams params) throws Exception {
-        PlateLayout plateLayout = plateLayoutRepository.findById(plateLayoutId)
-                .orElseGet(() -> {
-                    PlateLayout pl = PlateLayout.builder()
-                        .id(plateLayoutId)
-                        .rows(params.getRows())
-                        .columns(params.getColumns())
-                        .build();
-                    return plateLayoutRepository.save(pl);
-                });
-
+        validateParameters(params);
+        
+        PlateLayout plateLayout = findOrCreatePlateLayout(plateLayoutId, params);
+        
         int columns = params.getColumns();
         int rows = params.getRows();
         int xOrigin = params.getXOrigin();
@@ -124,59 +104,39 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         int yEnd = params.getYEnd();
         int circleSize = (int) Math.round(params.getWellDiameter() * 0.85);
 
-        ImagePlus imp = ij.IJ.openImage(imagePath);
-        if (imp == null) {
-            throw new IOException("Could not open image at: " + imagePath);
-        }
-        if (imp.getType() != ImagePlus.COLOR_RGB) {
-            ImageConverter ic = new ImageConverter(imp);
-            ic.convertToRGB();
-        }
+        ImagePlus imp = openAndPrepareImage(imagePath);
+        
         double wellSpacingX = (double)(xEnd - xOrigin) / (columns - 1);
         double wellSpacingY = (double)(yEnd - yOrigin) / (rows - 1);
 
         ImageProcessor processor = imp.getProcessor();
         List<WellAnalysis> results = new ArrayList<>();
+        
         for (int row = 0; row < rows; row++) {
             for (int col = 0; col < columns; col++) {
                 final int finalRow = row;
                 final int finalCol = col;
+                
                 int centerX = (int)(xOrigin + col * wellSpacingX);
                 int centerY = (int)(yOrigin + row * wellSpacingY);
-                int roiX = centerX - circleSize/2;
-                int roiY = centerY - circleSize/2;
-                OvalRoi roi = new OvalRoi(roiX, roiY, circleSize, circleSize);
+                
+                OvalRoi roi = createWellROI(centerX, centerY, circleSize);
                 processor.setRoi(roi);
                 RGBMeasurements measurements = measureRGBChannels(processor, roi);
+                BradfordCalculations calculations = calculateBradfordValues(measurements);
 
-                // Find or create Well
-                Well well = wellRepository.findByPlateLayoutIdAndRowAndColumn(plateLayout.getId(), finalRow, finalCol)
-                        .orElseGet(() -> {
-                            Well w = Well.builder()
-                                .row(finalRow)
-                                .column(finalCol)
-                                .plateLayout(plateLayout)
-                                .build();
-                            return wellRepository.save(w);
-                        });
-
-                // Find or create WellAnalysis
-                WellAnalysis wellAnalysis = wellAnalysisRepository.findByWellId(well.getId())
-                        .orElseGet(() -> {
-                            WellAnalysis wa = WellAnalysis.builder()
-                                .well(well)
-                                .build();
-                            return wa;
-                        });
-                // Set analysis values
-                wellAnalysis.setRedValue((int)Math.round(measurements.redMean));
+                Well well = findOrCreateWell(plateLayout, finalRow, finalCol);
+                WellAnalysis wellAnalysis = findOrCreateWellAnalysis(well);
+                
+                // Set analysis values with correct calculations
                 wellAnalysis.setGreenValue((int)Math.round(measurements.greenMean));
                 wellAnalysis.setBlueValue((int)Math.round(measurements.blueMean));
-                double blueGreenRatio = (measurements.blueMean > 0) ? measurements.greenMean / measurements.blueMean : 0;
-                wellAnalysis.setBlueGreenRatio(blueGreenRatio);
-                // You can add more calculations here as needed
+                wellAnalysis.setBlueToGreenRatio(calculations.blueToGreenRatio);  // Corrected
+                wellAnalysis.setGreenAbsorbance(calculations.greenAbsorbance);
+                wellAnalysis.setBlueAbsorbance(calculations.blueAbsorbance);
+                wellAnalysis.setAbsorbanceRatio(calculations.absorbanceRatio);
+                wellAnalysis.setPixelCount(measurements.pixelCount);
 
-                // Save WellAnalysis if new
                 if (wellAnalysis.getId() == null) {
                     wellAnalysisRepository.save(wellAnalysis);
                 }
@@ -187,46 +147,146 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         return results;
     }
     
+    // New method to calculate Bradford-specific values according to protocol
+    private BradfordCalculations calculateBradfordValues(RGBMeasurements measurements) {
+        BradfordCalculations calc = new BradfordCalculations();
+        
+        // Calculate blue-to-green ratio as per RGBradford protocol
+        calc.blueToGreenRatio = (measurements.greenMean > 0) ? 
+            measurements.blueMean / measurements.greenMean : 0.0;
+        
+        // Calculate absorbances (negative log base 10 of transmittance)
+        // Using 255 as reference (100% transmittance for 8-bit RGB)
+        calc.greenAbsorbance = (measurements.greenMean > 0) ? 
+            -Math.log10(measurements.greenMean / 255.0) : Double.MAX_VALUE;
+        calc.blueAbsorbance = (measurements.blueMean > 0) ? 
+            -Math.log10(measurements.blueMean / 255.0) : Double.MAX_VALUE;
+        
+        // Calculate absorbance ratio (green/blue absorbance)
+        calc.absorbanceRatio = (calc.blueAbsorbance > 0 && calc.blueAbsorbance != Double.MAX_VALUE) ? 
+            calc.greenAbsorbance / calc.blueAbsorbance : 0.0;
+            
+        return calc;
+    }
+    
+    // Helper method to validate input parameters
+    private void validateParameters(PlateAnalysisParams params) {
+        if (params.getColumns() <= 0 || params.getRows() <= 0) {
+            throw new IllegalArgumentException("Plate dimensions must be positive");
+        }
+        if (params.getWellDiameter() <= 0) {
+            throw new IllegalArgumentException("Well diameter must be positive");
+        }
+        if (params.getXOrigin() >= params.getXEnd() || params.getYOrigin() >= params.getYEnd()) {
+            throw new IllegalArgumentException("Invalid coordinate range");
+        }
+    }
+    
+    // Helper method to open and prepare image
+    private ImagePlus openAndPrepareImage(String imagePath) throws IOException {
+        ImagePlus imp = ij.IJ.openImage(imagePath);
+        if (imp == null) {
+            throw new IOException("Could not open image at: " + imagePath);
+        }
+        
+        // Ensure RGB as per protocol
+        if (imp.getType() != ImagePlus.COLOR_RGB) {
+            ImageConverter ic = new ImageConverter(imp);
+            ic.convertToRGB();
+        }
+        
+        return imp;
+    }
+    
+    // Helper method to create well ROI
+    private OvalRoi createWellROI(int centerX, int centerY, int circleSize) {
+        int roiX = centerX - circleSize/2;
+        int roiY = centerY - circleSize/2;
+        return new OvalRoi(roiX, roiY, circleSize, circleSize);
+    }
+    
+    // Helper methods for database operations
+    private PlateLayout findOrCreatePlateLayout(Long plateLayoutId, PlateAnalysisParams params) {
+        return plateLayoutRepository.findById(plateLayoutId)
+                .orElseGet(() -> {
+                    PlateLayout pl = PlateLayout.builder()
+                        .id(plateLayoutId)
+                        .rows(params.getRows())
+                        .columns(params.getColumns())
+                        .build();
+                    return plateLayoutRepository.save(pl);
+                });
+    }
+    
+    private Well findOrCreateWell(PlateLayout plateLayout, int row, int col) {
+        return wellRepository.findByPlateLayoutIdAndRowAndColumn(plateLayout.getId(), row, col)
+                .orElseGet(() -> {
+                    Well w = Well.builder()
+                        .row(row)
+                        .column(col)
+                        .plateLayout(plateLayout)
+                        .build();
+                    return wellRepository.save(w);
+                });
+    }
+    
+    private WellAnalysis findOrCreateWellAnalysis(Well well) {
+        return wellAnalysisRepository.findByWellId(well.getId())
+                .orElseGet(() -> WellAnalysis.builder()
+                    .well(well)
+                    .build());
+    }
+    
+    // Enhanced RGB measurement method with better error handling
     private static RGBMeasurements measureRGBChannels(ImageProcessor processor, OvalRoi roi) {
         Rectangle bounds = roi.getBounds();
-        double centerX = bounds.x + bounds.width / 2.0;
-        double centerY = bounds.y + bounds.height / 2.0;
-        double radius = bounds.width / 2.0;
-
-        int greenSum = 0, blueSum = 0, redSum = 0;
+        
+        int greenSum = 0, blueSum = 0;
         int pixelCount = 0;
+        int validPixelCount = 0;
 
         for (int y = bounds.y; y < bounds.y + bounds.height; y++) {
             for (int x = bounds.x; x < bounds.x + bounds.width; x++) {
                 if (roi.contains(x, y)) {
+                    pixelCount++;
+                    // Check bounds to avoid errors
                     if (x >= 0 && x < processor.getWidth() && y >= 0 && y < processor.getHeight()) {
                         int rgb = processor.getPixel(x, y);
-                        int red = (rgb >> 16) & 0xFF;
                         int green = (rgb >> 8) & 0xFF;
                         int blue = rgb & 0xFF;
-                        redSum += red;
+                        
                         greenSum += green;
                         blueSum += blue;
-                        pixelCount++;
+                        validPixelCount++;
                     }
                 }
             }
         }
 
         RGBMeasurements result = new RGBMeasurements();
-        if (pixelCount > 0) {
-            result.redMean = (double)redSum / pixelCount;
-            result.greenMean = (double)greenSum / pixelCount;
-            result.blueMean = (double)blueSum / pixelCount;
-            result.pixelCount = pixelCount;
+        if (validPixelCount > 0) {
+            result.greenMean = (double)greenSum / validPixelCount;
+            result.blueMean = (double)blueSum / validPixelCount;
+            result.pixelCount = validPixelCount;
+            result.totalPixelsInROI = pixelCount;
         }
+        
         return result;
     }
 
+    // Enhanced measurement class with additional fields
     private static class RGBMeasurements {
-        double redMean = 0;
         double greenMean = 0;
         double blueMean = 0;
         int pixelCount = 0;
+        int totalPixelsInROI = 0;  // For quality control
+    }
+    
+    // New class to hold Bradford-specific calculations
+    private static class BradfordCalculations {
+        double blueToGreenRatio = 0.0;
+        double greenAbsorbance = 0.0;
+        double blueAbsorbance = 0.0;
+        double absorbanceRatio = 0.0;
     }
 }

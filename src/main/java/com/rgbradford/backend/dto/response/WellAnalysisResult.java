@@ -16,9 +16,13 @@ public class WellAnalysisResult {
     private int column;
     private String wellType;
     private String sampleName;
-    private Integer redValue;
     private Integer greenValue;
     private Integer blueValue;
-    private Double blueGreenRatio;
+    private Double blueToGreenRatio;
     private Double calculatedConcentration;
+    // Added for extended Bradford analysis
+    private Double greenAbsorbance;
+    private Double blueAbsorbance;
+    private Double absorbanceRatio;
+    private Integer pixelCount;
 } 

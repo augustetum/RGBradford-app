@@ -22,12 +22,16 @@ public class WellAnalysis {
     private Well well;
 
     //RGB values (0-255 range)
-    private Integer redValue;
     private Integer greenValue;
     private Integer blueValue;
 
     //Calculated ratios and concentrations
-    private Double blueGreenRatio;
+    private Double blueToGreenRatio;
     private Double calculatedConcentration;
+    // Extended Bradford analysis fields
+    private Double greenAbsorbance;
+    private Double blueAbsorbance;
+    private Double absorbanceRatio;
+    private Integer pixelCount;
 
 } 

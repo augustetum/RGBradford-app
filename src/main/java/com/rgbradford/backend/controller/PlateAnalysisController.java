@@ -164,10 +164,13 @@ public class PlateAnalysisController {
                 .column(wellAnalysis.getWell().getColumn())
                 .wellType(wellAnalysis.getWell().getType().toString())
                 .sampleName(wellAnalysis.getWell().getSampleName())
-                .redValue(wellAnalysis.getRedValue())
                 .greenValue(wellAnalysis.getGreenValue())
                 .blueValue(wellAnalysis.getBlueValue())
-                .blueGreenRatio(wellAnalysis.getBlueGreenRatio())
+                .blueToGreenRatio(wellAnalysis.getBlueToGreenRatio())
+                .greenAbsorbance(wellAnalysis.getGreenAbsorbance())
+                .blueAbsorbance(wellAnalysis.getBlueAbsorbance())
+                .absorbanceRatio(wellAnalysis.getAbsorbanceRatio())
+                .pixelCount(wellAnalysis.getPixelCount())
                 .calculatedConcentration(wellAnalysis.getCalculatedConcentration())
                 .build();
     }
