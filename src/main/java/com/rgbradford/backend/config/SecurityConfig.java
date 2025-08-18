@@ -38,6 +38,8 @@ public class SecurityConfig {
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
                 auth.requestMatchers("/api/auth/**").permitAll();
+                auth.requestMatchers("/api/plate-analysis/analyze").permitAll();
+                auth.requestMatchers("/api/plate-analysis/*/reanalyze").permitAll();
                 auth.anyRequest().authenticated();
             })
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

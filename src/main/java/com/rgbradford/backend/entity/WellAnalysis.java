@@ -5,7 +5,6 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "well_analyses")
@@ -22,21 +21,17 @@ public class WellAnalysis {
     @JoinColumn(name = "well_id", nullable = false, unique = true)
     private Well well;
 
-    // RGB values (0-255 range)
-    private Integer redValue;
+    //RGB values (0-255 range)
     private Integer greenValue;
     private Integer blueValue;
 
-    // Calculated ratios and concentrations
-    private Double blueGreenRatio;
+    //Calculated ratios and concentrations
+    private Double blueToGreenRatio;
     private Double calculatedConcentration;
+    // Extended Bradford analysis fields
+    private Double greenAbsorbance;
+    private Double blueAbsorbance;
+    private Double absorbanceRatio;
+    private Integer pixelCount;
 
-    // Analysis metadata
-    private LocalDateTime analyzedAt;
-    private String analysisMethod; // e.g., "Bradford", "BCA", etc.
-
-    @PrePersist
-    protected void onCreate() {
-        this.analyzedAt = LocalDateTime.now();
-    }
 } 

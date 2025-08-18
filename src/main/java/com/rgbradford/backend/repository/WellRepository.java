@@ -2,6 +2,8 @@ package com.rgbradford.backend.repository;
 
 import com.rgbradford.backend.entity.Well;
 import com.rgbradford.backend.entity.WellType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import java.util.List;
@@ -36,4 +38,12 @@ public interface WellRepository extends JpaRepository<Well, Long> {
     
     //Find wells with analysis data (has WellAnalysis)
     List<Well> findByWellAnalysisIsNotNull();
+    
+    //Paged methods for filtering
+    Page<Well> findByPlateLayoutId(Long plateLayoutId, Pageable pageable);
+    Page<Well> findByType(WellType type, Pageable pageable);
+    Page<Well> findByReplicateGroup(String replicateGroup, Pageable pageable);
+    
+    //Delete wells by plate layout ID
+    void deleteByPlateLayoutId(Long plateLayoutId);
 } 

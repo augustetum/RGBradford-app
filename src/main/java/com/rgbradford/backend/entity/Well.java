@@ -26,7 +26,7 @@ public class Well {
 
     //Type of well (standard, sample, blank, empty)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private WellType type;
 
     //Standard wells additional field
@@ -44,7 +44,7 @@ public class Well {
     @JoinColumn(name = "plate_layout_id", nullable = false)
     private PlateLayout plateLayout;
 
-    //Reference to the well analysis results for this particular well
-    @OneToOne(mappedBy = "well", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private WellAnalysis wellAnalysis;
+  // Remove the @JoinColumn - use mappedBy instead
+@OneToOne(mappedBy = "well", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+private WellAnalysis wellAnalysis;
 } 

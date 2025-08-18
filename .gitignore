@@ -1,2 +1,4 @@
 #Ignore application properties for development
-src/main/resources/application.properties
+application.properties
+fiji
+
