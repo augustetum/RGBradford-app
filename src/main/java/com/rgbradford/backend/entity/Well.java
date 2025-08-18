@@ -26,7 +26,7 @@ public class Well {
 
     //Type of well (standard, sample, blank, empty)
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false, length = 20)
     private WellType type;
 
     //Standard wells additional field

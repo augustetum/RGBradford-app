@@ -8,6 +8,9 @@ import com.rgbradford.backend.entity.Well;
 import com.rgbradford.backend.entity.WellAnalysis;
 import com.rgbradford.backend.repository.PlateLayoutRepository;
 import com.rgbradford.backend.repository.WellRepository;
+import com.rgbradford.backend.repository.ProjectRepository;
+import com.rgbradford.backend.entity.Project;
+import com.rgbradford.backend.entity.WellType;
 import com.rgbradford.backend.repository.WellAnalysisRepository;
 import ij.ImagePlus;
 import ij.process.ImageProcessor;
@@ -19,18 +22,25 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.awt.*;
 import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.List;
 
 @Service
 public class PlateAnalysisServiceImpl implements PlateAnalysisService {
 
+    private final PlateLayoutRepository plateLayoutRepository;
+    private final WellRepository wellRepository;
+    private final WellAnalysisRepository wellAnalysisRepository;
+    private final ProjectRepository projectRepository;
+
     @Autowired
-    private PlateLayoutRepository plateLayoutRepository;
-    @Autowired
-    private WellRepository wellRepository;
-    @Autowired
-    private WellAnalysisRepository wellAnalysisRepository;
+    public PlateAnalysisServiceImpl(PlateLayoutRepository plateLayoutRepository, WellRepository wellRepository, WellAnalysisRepository wellAnalysisRepository, ProjectRepository projectRepository) {
+        this.plateLayoutRepository = plateLayoutRepository;
+        this.wellRepository = wellRepository;
+        this.wellAnalysisRepository = wellAnalysisRepository;
+        this.projectRepository = projectRepository;
+    }
 
     @Override
     public List<WellAnalysisResult> analyzePlate(String imagePath, PlateAnalysisParams params) throws Exception {
@@ -217,24 +227,29 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     private PlateLayout findOrCreatePlateLayout(Long plateLayoutId, PlateAnalysisParams params) {
         return plateLayoutRepository.findById(plateLayoutId)
                 .orElseGet(() -> {
-                    PlateLayout pl = PlateLayout.builder()
+                    Project defaultProject = projectRepository.findById(1L)
+                        .orElseThrow(() -> new RuntimeException("Default project with ID 1L not found."));
+
+                    PlateLayout newPlateLayout = PlateLayout.builder()
                         .id(plateLayoutId)
                         .rows(params.getRows())
                         .columns(params.getColumns())
+                        .project(defaultProject)
                         .build();
-                    return plateLayoutRepository.save(pl);
+                    return plateLayoutRepository.save(newPlateLayout);
                 });
     }
     
     private Well findOrCreateWell(PlateLayout plateLayout, int row, int col) {
         return wellRepository.findByPlateLayoutIdAndRowAndColumn(plateLayout.getId(), row, col)
                 .orElseGet(() -> {
-                    Well w = Well.builder()
+                    Well newWell = Well.builder()
                         .row(row)
                         .column(col)
                         .plateLayout(plateLayout)
+                        .type(WellType.UNKNOWN) // Set a default type
                         .build();
-                    return wellRepository.save(w);
+                    return wellRepository.save(newWell);
                 });
     }
     
