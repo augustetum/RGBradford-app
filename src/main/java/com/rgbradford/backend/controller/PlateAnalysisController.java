@@ -37,16 +37,7 @@ public class PlateAnalysisController {
             @RequestPart("params") PlateAnalysisParams params,
             @RequestPart("image") MultipartFile imageFile
     ) throws Exception {
-        
-        String uploadDir = "uploads/";
-        File dir = new File(uploadDir);
-        if (!dir.exists()) dir.mkdirs();
-
-        String imagePath = uploadDir + System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-        imageFile.transferTo(new File(imagePath));
-
-        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imagePath, params);
-
+        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imageFile.getInputStream(), params);
         return ResponseEntity.ok("Analysis complete and results saved.");
     }
 
@@ -144,14 +135,7 @@ public class PlateAnalysisController {
         }
         
         // Perform new analysis
-        String uploadDir = "uploads/";
-        File dir = new File(uploadDir);
-        if (!dir.exists()) dir.mkdirs();
-
-        String imagePath = uploadDir + System.currentTimeMillis() + "_" + imageFile.getOriginalFilename();
-        imageFile.transferTo(new File(imagePath));
-
-        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imagePath, params);
+        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imageFile.getInputStream(), params);
 
         return ResponseEntity.ok("Reanalysis complete and results updated.");
     }

@@ -32,7 +32,14 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     @Autowired
     private WellAnalysisRepository wellAnalysisRepository;
 
+    @Override
     public List<WellAnalysisResult> analyzePlate(String imagePath, PlateAnalysisParams params) throws Exception {
+        try (java.io.InputStream is = new java.io.FileInputStream(imagePath)) {
+            return analyzePlate(is, params);
+        }
+    }
+
+    public List<WellAnalysisResult> analyzePlate(java.io.InputStream imageInputStream, PlateAnalysisParams params) throws Exception {
         validateParameters(params);
         
         int columns = params.getColumns();
@@ -45,8 +52,8 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         // Use 15% reduction for well diameter to avoid edge effects (as per protocol)
         int circleSize = (int) Math.round(params.getWellDiameter() * 0.85);
 
-        ImagePlus imp = openAndPrepareImage(imagePath);
-        
+        ImagePlus imp = openAndPrepareImage(imageInputStream);
+
         // Calculate grid spacing
         double wellSpacingX = (double)(xEnd - xOrigin) / (columns - 1);
         double wellSpacingY = (double)(yEnd - yOrigin) / (rows - 1);
@@ -68,7 +75,7 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
                 BradfordCalculations calculations = calculateBradfordValues(measurements);
 
                 String wellId = rowLetter + (col + 1);
-                
+
                 WellAnalysisResult result = WellAnalysisResult.builder()
                         .wellId(counter)
                         .row(row)
@@ -91,11 +98,11 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     }
 
     @Transactional
-    public List<WellAnalysis> analyzeAndPersistPlate(Long plateLayoutId, String imagePath, PlateAnalysisParams params) throws Exception {
+    public List<WellAnalysis> analyzeAndPersistPlate(Long plateLayoutId, java.io.InputStream imageInputStream, PlateAnalysisParams params) throws Exception {
         validateParameters(params);
         
         PlateLayout plateLayout = findOrCreatePlateLayout(plateLayoutId, params);
-        
+
         int columns = params.getColumns();
         int rows = params.getRows();
         int xOrigin = params.getXOrigin();
@@ -104,7 +111,7 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         int yEnd = params.getYEnd();
         int circleSize = (int) Math.round(params.getWellDiameter() * 0.85);
 
-        ImagePlus imp = openAndPrepareImage(imagePath);
+        ImagePlus imp = openAndPrepareImage(imageInputStream);
         
         double wellSpacingX = (double)(xEnd - xOrigin) / (columns - 1);
         double wellSpacingY = (double)(yEnd - yOrigin) / (rows - 1);
@@ -183,18 +190,19 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     }
     
     // Helper method to open and prepare image
-    private ImagePlus openAndPrepareImage(String imagePath) throws IOException {
-        ImagePlus imp = ij.IJ.openImage(imagePath);
-        if (imp == null) {
-            throw new IOException("Could not open image at: " + imagePath);
+    private ImagePlus openAndPrepareImage(java.io.InputStream imageInputStream) throws IOException {
+        // Try to read as BufferedImage and wrap in ImagePlus
+        javax.imageio.ImageIO.setUseCache(false);
+        java.awt.image.BufferedImage bufferedImage = javax.imageio.ImageIO.read(imageInputStream);
+        if (bufferedImage == null) {
+            throw new IOException("Could not decode image from input stream");
         }
-        
+        ImagePlus imp = new ImagePlus("uploaded", bufferedImage);
         // Ensure RGB as per protocol
         if (imp.getType() != ImagePlus.COLOR_RGB) {
             ImageConverter ic = new ImageConverter(imp);
             ic.convertToRGB();
         }
-        
         return imp;
     }
     
@@ -240,7 +248,7 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
     // Enhanced RGB measurement method with better error handling
     private static RGBMeasurements measureRGBChannels(ImageProcessor processor, OvalRoi roi) {
         Rectangle bounds = roi.getBounds();
-        
+
         int greenSum = 0, blueSum = 0;
         int pixelCount = 0;
         int validPixelCount = 0;

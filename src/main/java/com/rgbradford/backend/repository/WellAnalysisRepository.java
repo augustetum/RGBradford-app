@@ -21,7 +21,7 @@ public interface WellAnalysisRepository extends JpaRepository<WellAnalysis, Long
     List<WellAnalysis> findByCalculatedConcentrationLessThan(Double concentration);
     
     //Find analyses by blue-green ratio range
-    List<WellAnalysis> findByBlueGreenRatioBetween(Double minRatio, Double maxRatio);
+    List<WellAnalysis> findByBlueToGreenRatioBetween(Double minRatio, Double maxRatio);
     
     //Find analyses with high blue values (indicating protein presence)
     List<WellAnalysis> findByBlueValueGreaterThan(Integer blueValue);
