@@ -40,6 +40,7 @@ public class SecurityConfig {
                 auth.requestMatchers("/api/auth/**").permitAll();
                 auth.requestMatchers("/api/plate-analysis/analyze").permitAll();
                 auth.requestMatchers("/api/plate-analysis/*/reanalyze").permitAll();
+                auth.requestMatchers("/api/plate-layouts/*/group-wells").permitAll();
                 auth.anyRequest().authenticated();
             })
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
