@@ -5,6 +5,7 @@ import com.rgbradford.backend.dto.request.UpdatePlateLayoutRequest;
 import com.rgbradford.backend.dto.request.WellRequest;
 import com.rgbradford.backend.dto.response.PlateLayoutResponse;
 import com.rgbradford.backend.dto.response.WellResponse;
+import com.rgbradford.backend.dto.WellGroupingRequest;
 import com.rgbradford.backend.entity.PlateLayout;
 import com.rgbradford.backend.entity.Well;
 import com.rgbradford.backend.entity.WellType;
@@ -18,7 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @RestController
 @RequestMapping("/api/plate-layouts")
@@ -165,6 +170,54 @@ public class PlateLayoutController {
                     return ResponseEntity.ok(responses);
                 })
                 .orElse(ResponseEntity.notFound().build());
+    }
+
+    // POST /api/plate-layouts/{id}/group-wells - Group wells into standard, sample, and blank
+    @PostMapping("/{id}/group-wells")
+    public ResponseEntity<List<WellResponse>> groupWells(
+            @PathVariable Long id,
+            @RequestBody WellGroupingRequest request) {
+
+        return plateLayoutRepository.findById(id)
+                .map(plateLayout -> {
+                    List<Well> wells = wellRepository.findByPlateLayoutId(id);
+                    Map<Long, Well> wellMap = wells.stream().collect(Collectors.toMap(Well::getId, Function.identity()));
+
+                    updateWellTypes(wellMap, request.getStandardWellIds(), WellType.STANDARD);
+                    updateWellTypes(wellMap, request.getSampleWellIds(), WellType.SAMPLE);
+                    updateWellTypes(wellMap, request.getBlankWellIds(), WellType.BLANK);
+
+                    Set<Long> groupedWellIds = Stream.of(
+                            request.getStandardWellIds(),
+                            request.getSampleWellIds(),
+                            request.getBlankWellIds())
+                            .flatMap(List::stream)
+                            .collect(Collectors.toSet());
+
+                    wells.forEach(well -> {
+                        if (!groupedWellIds.contains(well.getId())) {
+                            well.setType(WellType.EMPTY);
+                        }
+                    });
+
+                    List<Well> savedWells = wellRepository.saveAll(wells);
+                    List<WellResponse> responses = savedWells.stream()
+                            .map(this::convertToWellResponse)
+                            .collect(Collectors.toList());
+
+                    return ResponseEntity.ok(responses);
+                })
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private void updateWellTypes(Map<Long, Well> wellMap, List<Long> wellIds, WellType wellType) {
+        if (wellIds != null) {
+            wellIds.forEach(wellId -> {
+                if (wellMap.containsKey(wellId)) {
+                    wellMap.get(wellId).setType(wellType);
+                }
+            });
+        }
     }
 
     private PlateLayoutResponse convertToResponse(PlateLayout plateLayout) {
