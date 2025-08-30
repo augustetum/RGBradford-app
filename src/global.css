@@ -1,0 +1,40 @@
+@import "tailwindcss";
+
+@font-face {
+    font-family: "Inter";
+    src: url("https://static.igem.wiki/teams/5780/fonts/inter-variablefont-opsz-wght.ttf") format("truetype");
+    font-weight: 100 900; 
+    font-style: normal;
+  }
+  
+@font-face {
+    font-family: "Inter";
+    src: url("https://static.igem.wiki/teams/5780/fonts/inter-italic-variablefont-opsz-wght.ttf") format("truetype");
+    font-weight: 100 900; 
+    font-style: italic;
+}
+
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+  
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+@theme {
+    --color-igem-purple: #3B295E;
+    --color-igem-black: #171717;
+    --color-igem-dred: #761113;
+    --color-igem-red: #c12126;
+    --color-igem-white: #ffffff;
+    --color-igem-blue: #669bbc;
+    --color-igem-dblue: #003049;
+    --color-igem-dblue-highlight: #004366;
+    --color-igem-gray: #D9d9d9;
+}

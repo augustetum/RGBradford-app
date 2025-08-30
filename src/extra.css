@@ -1,0 +1,37 @@
+.elipsoid {
+    clip-path: ellipse(50% 50%);
+}
+
+.drop {
+    filter: drop-shadow(0 0.4rem 0.1rem rgba(0, 0, 0, 0.5));
+}
+
+.hoverRaise {
+    transform: translateY(0);
+    transition: transform 0.2s ease-in-out;
+}
+
+.hoverRaise:hover {
+    transform: translateY(-0.2rem);
+
+}
+
+p {
+    opacity: 0.8;
+    color: var(--color-igem-black);
+    font-weight: 600;
+}
+
+.screen {
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+}
+
+.screen-enter {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.screen-active {
+  opacity: 1;
+  transform: translateX(0);
+}
