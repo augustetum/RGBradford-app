@@ -5,6 +5,7 @@ import data from './data.js'
 import ProjectList from './components/projectList.jsx'
 import Project from './components/project.jsx'
 import { AnimatePresence, motion } from 'framer-motion';
+import Account from './components/account.jsx'
 
 function App() {
   const [currentProject, setProject] = useState(null)
@@ -41,6 +42,9 @@ function App() {
       {currentScreen === 'project' && (
         <Project projects={projects} currentProject={currentProject}/>
       )}
+      {currentScreen === 'account' && (
+        <Account data={data}/>
+      )}      
       </motion.div>
       </AnimatePresence>
       </div>
