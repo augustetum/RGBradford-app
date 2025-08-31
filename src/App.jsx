@@ -24,9 +24,8 @@ function App() {
   };
 
   return (
-    <div className='text-center text-igem-white bg-igem-purple min-h-[100vh] flex flex-col items-center justify-between '>
-      <div className={`$screen {isTransitioning ? 'screen-enter' : 'screen-active'}
-       mt-10 mb-30 max-w-[min(80vw,50rem)]`}>
+    <div className='text-center text-igem-white bg-igem-purple min-h-[100vh] flex flex-col'>
+      <div className={`mx-auto w-200 mt-10 mb-30 max-w-[min(80vw,50rem)]`}>
       <AnimatePresence mode="wait">
       <motion.div
        key={currentScreen}

@@ -1,4 +1,5 @@
 import React from "react"
+import folderIcon from "../assets/folder.svg"
 
 function Footer({handleSwitch}) {
     return (    
@@ -7,15 +8,15 @@ function Footer({handleSwitch}) {
     bg-igem-white flex justify-around font-semibold
     text-black py-4 max-w-[50rem] rounded-t-md mx-auto'>
         <button className='h-full '>
-        <img className="w-10 mx-auto" src="src\assets\folder.svg" alt="" />
+        <img className="w-10 mx-auto" src={folderIcon} alt="" />
         <p className='opacity-80'>project</p>
         </button>
         <button onClick={() => handleSwitch(null, "catalog")} className='cursor-pointer h-full '>
-        <img className="w-10 mx-auto" src="src\assets\folder.svg" alt="" />
+        <img className="w-10 mx-auto" src={folderIcon} alt="" />
         <p className='opacity-80'>catalog</p>
         </button>
         <button className='h-full '>
-        <img className="w-10 mx-auto"  src="src\assets\folder.svg" alt="" />
+        <img className="w-10 mx-auto"  src={folderIcon} alt="" />
         <p className='opacity-80'>account</p>
         </button>
     </footer>

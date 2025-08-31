@@ -1,5 +1,5 @@
 import React from "react";
-
+import folderIcon from '../assets/folder.svg';
 function Project({projects, currentProject}) {
     return (
         <main className=''>
@@ -8,7 +8,7 @@ function Project({projects, currentProject}) {
         <button className='cursor-pointer w-[min(80vw,50rem)] h-[30vh] bg-igem-gray 
         rounded-xl flex justify-center items-center'>
             <div>
-              <img src="src\assets\folder.svg" className='mx-auto w-10' />
+              <img src={folderIcon} className='mx-auto w-10' />
               <p className=''>upload plate</p>
             </div>
         </button>
