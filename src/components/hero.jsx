@@ -6,7 +6,7 @@ function Hero({name}) {
         <>
         <header className='text-center pb-4 text-3xl font-semibold'>
           <h2>Welcome back {name}!</h2>
-          <img src="src\assets\chemistry.png" alt="" className='drop mx-auto w-auto h-50' />
+          <img src={chemistryImage} alt="" className='drop mx-auto w-auto h-50' />
         </header>
         <ul className='flex flex-col my-4'>
           <li className='mr-auto drop'>
