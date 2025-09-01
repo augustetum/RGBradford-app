@@ -22,16 +22,37 @@ p {
     font-weight: 600;
 }
 
-.screen {
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+button {
+    cursor: pointer;
+  }
+
+.btn {
+    background-color: var(--color-igem-gray);
+    color: var(--color-igem-black);
+    border: 2px var(--color-igem-black) solid;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    transition: all 0.1s ease;
+    transform: translateY(-0.2rem);
+    box-shadow: 0rem 0.5rem black;
 }
 
-.screen-enter {
-  opacity: 0;
-  transform: translateX(20px);
+.btn:hover {
+    transform: translateY(-0.33rem);
+    box-shadow: 0rem 0.63rem black;
 }
 
-.screen-active {
-  opacity: 1;
-  transform: translateX(0);
+.btn:active {
+
+    transform: translateY(0rem);
+    box-shadow: 0rem 0.30rem black;;
+}
+
+.inpt {
+    border: 2px black solid;
+    border-radius: 0.5rem;
+    width: 4rem;
+    text-align: right;
+    background-color: var(--color-igem-white);
+    color: black;
 }

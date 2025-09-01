@@ -9,7 +9,7 @@ function Footer({handleSwitch}) {
     className='drop-shadow-2xl filter max-h-[15vh] h-30 w-full fixed left-0 right-0 bottom-0
     bg-igem-white flex justify-around font-semibold
     text-black py-4 max-w-[50rem] rounded-t-md mx-auto'>
-        <button className='h-full '>
+        <button onClick={() => handleSwitch(null, "upload")} className='cursor-pointer h-full '>
         <img className="w-10 mx-auto" src={plusIcon} alt="" />
         <p className='opacity-80'>project</p>
         </button>
