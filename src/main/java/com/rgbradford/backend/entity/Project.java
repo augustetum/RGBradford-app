@@ -37,8 +37,27 @@ public class Project {
     private LocalDateTime updatedAt;
 
     //One project has one plate layout (or plate)
-    @OneToOne(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "project", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, orphanRemoval = true, fetch = FetchType.LAZY)
     private PlateLayout plateLayout;
+    
+    // Helper method to set the plate layout and maintain the bidirectional relationship
+    public void setPlateLayout(PlateLayout plateLayout) {
+        if (plateLayout == null) {
+            if (this.plateLayout != null) {
+                PlateLayout existingPlateLayout = this.plateLayout;
+                this.plateLayout = null;
+                existingPlateLayout.setProjectInternal(null);
+            }
+        } else {
+            plateLayout.setProjectInternal(this);
+        }
+        this.plateLayout = plateLayout;
+    }
+    
+    // Internal method to set the project without causing an infinite loop
+    void setPlateLayoutInternal(PlateLayout plateLayout) {
+        this.plateLayout = plateLayout;
+    }
 
     //PrePersist is used for timestamping the creation of the project BEFORE it is saved to the database
     @PrePersist

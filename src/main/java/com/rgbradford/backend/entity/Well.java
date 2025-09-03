@@ -23,6 +23,10 @@ public class Well {
 
     @Column(nullable = false)
     private int column;
+    
+    // Human-readable position (e.g., "A1", "B2")
+    @Column(name = "position", length = 5, nullable = false)
+    private String position;
 
     //Type of well (standard, sample, blank, empty)
     @Enumerated(EnumType.STRING)
