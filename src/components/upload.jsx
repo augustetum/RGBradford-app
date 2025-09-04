@@ -2,8 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, use  } from "react";
 import plusIcon from "../assets/plus.svg"
 import { AnimatePresence, motion } from 'framer-motion';
 
-function Upload() {
-  
+function Upload() {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
   const [coordsOrigin, setCoordsOrigin] = useState(null);
@@ -20,7 +19,7 @@ function Upload() {
   const [sizeMode, setSizeMode] = useState(false);
   const [sizeLine, setSizeLine] = useState(null); // { x1, y1, x2, y2 }
   const [measuredDistance, setMeasuredDistance] = useState(null);
-
+  const [uploadStage, setUploadStage] = useState('parameters');
 
   const handleInputContainerClick = () => {
     fileInputRef.current.click();
@@ -94,9 +93,7 @@ function Upload() {
       canvas.height = height;
     
       ctx.clearRect(0, 0, width, height);
-      
       ctx.drawImage(img, 0, 0, width, height);
-    
       if (selection) {
         ctx.save();
         ctx.fillStyle = "rgba(0,0,0,0.35)";
@@ -139,6 +136,14 @@ function Upload() {
           ctx.lineTo(sizeLine.x2 - selectionOld.x, sizeLine.y2 - selectionOld.y);
         }
         ctx.stroke();
+      }
+      for (let indexColumns = 0; indexColumns < array.length; indeColumnsx++) {
+        for (let indexRows = 0; indexRows < array.length; indexRows++) {
+          const element = array[index];
+          
+        }
+        const element = array[index];
+        
       }
     }, [displayedImage, selection, coordsOrigin, coordsEnd, loadImage, sizeLine]);
     
@@ -243,6 +248,11 @@ function Upload() {
       setSelection(null);
     };
 
+    const handleSubmit = () => {
+      setUploadStage('calibration');
+      reset();
+    }
+
   return (
     <>
           <AnimatePresence mode="wait">
@@ -273,7 +283,7 @@ function Upload() {
         </div>
       </button>)}
 
-      {(
+      
         <div className={`${image ? "" : "hidden"} my-6`}>
         <div className=" w-[min(80vw,50rem)] p-4 bg-igem-gray 
           rounded-xl flex flex-col">
@@ -288,33 +298,44 @@ function Upload() {
           onClick={handleClick}
         />
           
-          <p className="mt-4 !text-igem-black  text-lg font-mono">
+          <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
             Clicked at: ({coords.x}, {coords.y}, selection: {selectionOld ? selectionOld.x : ""}, {selectionOld ? selectionOld.y : ""}, {selectionOld ? selectionOld.w : ""}, {selectionOld ? selectionOld.h : ""})
           </p>
         
 
         </div>
+        {uploadStage == 'parameters' && (
         <div className="w-[min(80vw,50rem)]">
           <div className="flex gap-4 justify-center mt-6 flex-wrap">
             <button onClick={() => setImage(null)} className="btn">
               Clear Image
             </button>
             <button onClick={() => {setCoordsOrigin({ ...coords });}} className="btn">
-              Set Origin Coordinates
+              Set Top Left Well Coordinates
             </button>
             <button onClick={() => {setCoordsEnd({ ...coords });}} className="btn">
-              Set End Coordinates
-            </button>
-            <button className="btn !bg-white font-bold">
-              Submit
+              Set Bottom Right Well Coordinates
             </button>
             <button
               onClick={() => {toggleSelectMode(); setSizeMode(false);}}
               className={`btn ${
-                selectMode ? "!bg-blue-600 !text-white" : ""
+                selectMode ? "!bg-red-600 !text-white" : ""
               }`}
             >
-              {selectMode ? "Exit Select Mode" : "Enter Select Mode"}
+              {selectMode ? "Exit Zoom Mode" : "Enter Zoom Mode"}
+            </button>
+            <button
+              onClick={crop}
+              disabled={!selection || selection.w === 0 || selection.h === 0}
+              className="btn"
+            >
+              Zoom
+            </button>
+            <button
+              onClick={reset}
+              className="btn"
+            >
+              Reset Zoom
             </button>
             <button
               onClick={() => {
@@ -325,20 +346,10 @@ function Upload() {
               }}
               className={`btn ${sizeMode ? "!bg-red-600 !text-white" : ""}`}
             >
-              {sizeMode ? "Exit Size Mode" : "Enter Size Mode"}
+              {sizeMode ? "Exit Diameter Select Mode" : "Enter Diameter Select Mode"}
             </button>
-            <button
-              onClick={crop}
-              disabled={!selection || selection.w === 0 || selection.h === 0}
-              className="btn"
-            >
-              Crop
-            </button>
-            <button
-              onClick={reset}
-              className="btn"
-            >
-              Reset to Original
+            <button onClick={handleSubmit} className="btn !bg-green-500 font-bold">
+              Submit
             </button>
           </div>
           <form className="mt-6 flex gap-4 text-xl justify-center flex-wrap" action="">
@@ -350,8 +361,8 @@ function Upload() {
             <span><p className="!text-white">yEnd</p><input className="inpt" readOnly={true} type="number" name="yEnd" id="yEnd" value={coordsEnd ? coordsEnd.y : ""} /></span>
             <span><p className="!text-white">wellDiameter</p><input className="inpt" readOnly={true} type="number" name="wellDiameter" id="wellDiameter" value={measuredDistance ? Math.round(measuredDistance/2) : ""} /></span>
           </form>
-        </div>
-    </div>)}
+        </div>)}
+    </div>
     </motion.div>
     </AnimatePresence>
     </>
