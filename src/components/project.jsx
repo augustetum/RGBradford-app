@@ -16,7 +16,7 @@ function Project({projects, currentProject}) {
         <main className=''>
         <h1 className='text-3xl font-semibold'>{projects[currentProject].projectTitle}</h1>
         <h3 className='opacity-80 py-4'>{projects[currentProject].creationDate}</h3>
-        <div className=" pt-2 bg-igem-white rounded-xl w-[min(80vw,50rem)] h-[30vh]  mx-auto my-4">
+        <div className=" pt-2 bg-igem-white rounded-xl w-[min(90vw,50rem)] h-[30vh]  mx-auto my-4">
             <h2 className="text-igem-black">Calibration curve, R<sup>2</sup>: {curveData.lineR2} </h2>
             <ChartContainer
             margin={10}

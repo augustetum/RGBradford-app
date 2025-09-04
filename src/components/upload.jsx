@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback, use  } from "react";
 import plusIcon from "../assets/plus.svg"
 import { AnimatePresence, motion } from 'framer-motion';
+import WellSelection from "./wellSelection.jsx";
 
 function Upload() {  
   const [image, setImage] = useState(null);
@@ -9,6 +10,8 @@ function Upload() {
   const [coordsEnd, setCoordsEnd] = useState(null);
   const originalImgRef = useRef(null);
   const fileInputRef = useRef(null);
+  const rowRef = useRef(null);
+  const columnRef = useRef(null);
   const [originalImage, setOriginalImage] = useState(image);
   const [displayedImage, setDisplayedImage] = useState(originalImage);
   const [selectMode, setSelectMode] = useState(false);
@@ -20,7 +23,8 @@ function Upload() {
   const [sizeLine, setSizeLine] = useState(null); // { x1, y1, x2, y2 }
   const [measuredDistance, setMeasuredDistance] = useState(null);
   const [uploadStage, setUploadStage] = useState('parameters');
-
+  const [wellCenters, setWellCenters] = useState([]);
+  
   const handleInputContainerClick = () => {
     fileInputRef.current.click();
   };
@@ -63,6 +67,7 @@ function Upload() {
       pixelY = Math.round(y * scaleY);
     }
     setCoords({ x: pixelX, y: pixelY });
+    return { x: pixelX, y: pixelY };
   };
   
     const loadImage = useCallback((src) => {
@@ -80,7 +85,6 @@ function Upload() {
 
     const draw = useCallback(async () => {
       const canvas = canvasRef.current;
-      console.log("called draw")
       if (!canvas) return;
       
       const ctx = canvas.getContext("2d");
@@ -137,13 +141,28 @@ function Upload() {
         }
         ctx.stroke();
       }
-      for (let indexColumns = 0; indexColumns < array.length; indeColumnsx++) {
-        for (let indexRows = 0; indexRows < array.length; indexRows++) {
-          const element = array[index];
-          
-        }
-        const element = array[index];
+
+      if (coordsEnd && coordsOrigin && measuredDistance) {
+        const offsetX = selectionOld ? selectionOld.x : 0
+        const offsetY = selectionOld ? selectionOld.y : 0
+        const rowCount = rowRef.current.value
+        const columnCount = columnRef.current.value
+        const diameter = measuredDistance
+        //const diameter = Math.round(0.5*(Math.abs(coordsOrigin.x-coordsEnd.x)/(columnCount-1) + Math.abs(coordsOrigin.y-coordsEnd.y)/(rowCount-1)))
+        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
+        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
         
+        for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
+          for (let indexRow = 0; indexRow < rowCount; indexRow++) {
+            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
+            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY
+            ctx.beginPath();
+            ctx.arc(coordX, coordY,
+                    diameter/2,0,Math.PI*2)
+            ctx.stroke()
+            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY}]))
+          }
+        }
       }
     }, [displayedImage, selection, coordsOrigin, coordsEnd, loadImage, sizeLine]);
     
@@ -154,7 +173,7 @@ function Upload() {
     }, [draw, displayedImage, selection, coordsOrigin, coordsEnd, sizeLine]);
     
   
-    const getMousePos = (e) => {
+    const getPointerPos = (e) => {
       const canvas = canvasRef.current;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
@@ -167,23 +186,24 @@ function Upload() {
       };
     };
   
-    const onMouseDown = (e) => {
+    const onPointerDown = (e) => {
+      e.preventDefault();
       if (selectMode){
       setIsDrawing(true);
-      const { x, y } = getMousePos(e);
+      const { x, y } = getPointerPos(e);
       setSelection({ x, y, w: 0, h: 0 });
       }
       else if (sizeMode) {
       setIsDrawing(true);
-      const { x, y } = getMousePos(e);
+      const { x, y } = getPointerPos(e);
       setSizeLine({ x1: x, y1: y, x2: x, y2: y });
       }
     };
   
-    const onMouseMove = (e) => {
+    const onPointerMove = (e) => {
       if (!isDrawing) return;
       if (selectMode && selection) {
-      const { x, y } = getMousePos(e);
+      const { x, y } = getPointerPos(e);
       const x0 = Math.min(x, selection.x);
       const y0 = Math.min(y, selection.y);
       const w = Math.abs(x - selection.x);
@@ -191,12 +211,12 @@ function Upload() {
       setSelection({ x: x0, y: y0, w, h });
       }
       else if (sizeMode && sizeLine) {
-        const { x, y } = getMousePos(e);
+        const { x, y } = getPointerPos(e);
         setSizeLine((prev) => ({ ...prev, x2: x, y2: y }));
-  }
+    }
     };
   
-    const onMouseUp = () => {
+    const onPointerUp = () => {
       if (sizeMode && sizeLine) {
         const dx = sizeLine.x2 - sizeLine.x1;
         const dy = sizeLine.y2 - sizeLine.y1;
@@ -205,7 +225,7 @@ function Upload() {
       }
       setIsDrawing(false);
       };
-    const onMouseLeave = () => setIsDrawing(false);
+    const onPointerLeave = () => setIsDrawing(false);
   
     const crop = async () => {
       if (!selection || selection.w === 0 || selection.h === 0) return;
@@ -248,8 +268,10 @@ function Upload() {
       setSelection(null);
     };
 
+
     const handleSubmit = () => {
       setUploadStage('calibration');
+      
       reset();
     }
 
@@ -268,7 +290,7 @@ function Upload() {
         }
       }}
       >
-        {!image &&(<button onClick={handleInputContainerClick} className='cursor-pointer w-[min(80vw,50rem)] h-[30vh] bg-igem-gray 
+        {!image &&(<button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray 
           rounded-xl flex justify-center items-center'>
         <div>
           <img src={plusIcon} className='mx-auto w-10 ' />
@@ -283,29 +305,32 @@ function Upload() {
         </div>
       </button>)}
 
-      
-        <div className={`${image ? "" : "hidden"} my-6`}>
-        <div className=" w-[min(80vw,50rem)] p-4 bg-igem-gray 
+      {uploadStage == 'calibration' && (
+          <WellSelection originalImage={displayedImage} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
+        )}
+      {uploadStage == 'parameters' && ( 
+        <div className={`${image ? "" : "hidden"} mb-6 `}>
+        <div className=" p-2 bg-igem-gray 
           rounded-xl flex flex-col">
           
         <canvas
           ref={canvasRef}
-          onMouseDown={onMouseDown}
-          onMouseMove={onMouseMove}
-          onMouseUp={onMouseUp}
-          onMouseLeave={onMouseLeave}
-          className="border rounded-2xl shadow w-full h-auto"
+          onPointerDown={onPointerDown}
+          onPointerMove={onPointerMove}
+          onPointerUp={onPointerUp}
+          onPointerLeave={onPointerLeave}
+          className="border rounded-2xl shadow w-auto h-full touch-none"
           onClick={handleClick}
         />
           
-          <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
+          {/* <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
             Clicked at: ({coords.x}, {coords.y}, selection: {selectionOld ? selectionOld.x : ""}, {selectionOld ? selectionOld.y : ""}, {selectionOld ? selectionOld.w : ""}, {selectionOld ? selectionOld.h : ""})
-          </p>
+          </p> */}
         
 
         </div>
-        {uploadStage == 'parameters' && (
-        <div className="w-[min(80vw,50rem)]">
+        
+        <div className="w-[min(90vw,50rem)]">
           <div className="flex gap-4 justify-center mt-6 flex-wrap">
             <button onClick={() => setImage(null)} className="btn">
               Clear Image
@@ -353,16 +378,16 @@ function Upload() {
             </button>
           </div>
           <form className="mt-6 flex gap-4 text-xl justify-center flex-wrap" action="">
-            <span ><p className="!text-white">Columns</p><input className="inpt" type="number" name="columns" id="columns" defaultValue="12" /></span>
-            <span><p className="!text-white">Rows</p><input className="inpt" type="number" name="rows" id="rows" defaultValue="8" /></span>
+            <span ><p className="!text-white">Columns</p><input className="inpt" type="number" name="columns" ref={columnRef} id="columns" defaultValue="12" /></span>
+            <span><p className="!text-white">Rows</p><input className="inpt" type="number" name="rows" ref={rowRef} id="rows" defaultValue="8" /></span>
             <span><p className="!text-white">xOrigin</p><input className="inpt" readOnly={true} type="number" name="xOrigin" id="xOrigin" value={coordsOrigin ? coordsOrigin.x : ""} /></span>
             <span><p className="!text-white">yOrigin</p><input className="inpt" readOnly={true} type="number" name="yOrigin" id="yOrigin" value={coordsOrigin ? coordsOrigin.y : ""} /></span>
             <span><p className="!text-white">xEnd</p><input className="inpt" readOnly={true} type="number" name="xEnd" id="xEnd" value={coordsEnd ? coordsEnd.x : ""} /></span>
             <span><p className="!text-white">yEnd</p><input className="inpt" readOnly={true} type="number" name="yEnd" id="yEnd" value={coordsEnd ? coordsEnd.y : ""} /></span>
             <span><p className="!text-white">wellDiameter</p><input className="inpt" readOnly={true} type="number" name="wellDiameter" id="wellDiameter" value={measuredDistance ? Math.round(measuredDistance/2) : ""} /></span>
           </form>
-        </div>)}
-    </div>
+        </div>
+    </div>)}
     </motion.div>
     </AnimatePresence>
     </>
