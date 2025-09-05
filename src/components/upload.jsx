@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback, use  } from "react";
 import plusIcon from "../assets/plus.svg"
 import { AnimatePresence, motion } from 'framer-motion';
 import WellSelection from "./wellSelection.jsx";
-
+import Calibration from "./calibration.jsx";
 function Upload() {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
@@ -44,8 +44,8 @@ function Upload() {
     }
   };
 
-  const handleClick = (e) => {
-    const canvas = canvasRef.current;
+  const handleClick = (e, ref) => {
+    const canvas = ref.current;
     const img = originalImgRef.current
     if (!canvas) {console.log("no canvas"); return;}
     const rect = canvas.getBoundingClientRect();
@@ -160,7 +160,7 @@ function Upload() {
             ctx.arc(coordX, coordY,
                     diameter/2,0,Math.PI*2)
             ctx.stroke()
-            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY}]))
+            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn, 'indexRow' : indexRow}]))
           }
         }
       }
@@ -173,8 +173,8 @@ function Upload() {
     }, [draw, displayedImage, selection, coordsOrigin, coordsEnd, sizeLine]);
     
   
-    const getPointerPos = (e) => {
-      const canvas = canvasRef.current;
+    const getPointerPos = (e, ref) => {
+      const canvas = ref.current;
       const rect = canvas.getBoundingClientRect();
       const scaleX = canvas.width / rect.width;
       const scaleY = canvas.height / rect.height;
@@ -190,12 +190,12 @@ function Upload() {
       e.preventDefault();
       if (selectMode){
       setIsDrawing(true);
-      const { x, y } = getPointerPos(e);
+      const { x, y } = getPointerPos(e, canvasRef);
       setSelection({ x, y, w: 0, h: 0 });
       }
       else if (sizeMode) {
       setIsDrawing(true);
-      const { x, y } = getPointerPos(e);
+      const { x, y } = getPointerPos(e, canvasRef);
       setSizeLine({ x1: x, y1: y, x2: x, y2: y });
       }
     };
@@ -203,7 +203,7 @@ function Upload() {
     const onPointerMove = (e) => {
       if (!isDrawing) return;
       if (selectMode && selection) {
-      const { x, y } = getPointerPos(e);
+      const { x, y } = getPointerPos(e, canvasRef);
       const x0 = Math.min(x, selection.x);
       const y0 = Math.min(y, selection.y);
       const w = Math.abs(x - selection.x);
@@ -211,7 +211,7 @@ function Upload() {
       setSelection({ x: x0, y: y0, w, h });
       }
       else if (sizeMode && sizeLine) {
-        const { x, y } = getPointerPos(e);
+        const { x, y } = getPointerPos(e, canvasRef);
         setSizeLine((prev) => ({ ...prev, x2: x, y2: y }));
     }
     };
@@ -270,7 +270,7 @@ function Upload() {
 
 
     const handleSubmit = () => {
-      setUploadStage('calibration');
+      setUploadStage('wellSelection');
       
       reset();
     }
@@ -305,9 +305,13 @@ function Upload() {
         </div>
       </button>)}
 
-      {uploadStage == 'calibration' && (
-          <WellSelection originalImage={displayedImage} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
+      {uploadStage == 'wellSelection' && (
+          <WellSelection originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
         )}
+      {uploadStage == 'calibration' && (
+          <Calibration originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
+        )}
+      
       {uploadStage == 'parameters' && ( 
         <div className={`${image ? "" : "hidden"} mb-6 `}>
         <div className=" p-2 bg-igem-gray 
@@ -320,7 +324,7 @@ function Upload() {
           onPointerUp={onPointerUp}
           onPointerLeave={onPointerLeave}
           className="border rounded-2xl shadow w-auto h-full touch-none"
-          onClick={handleClick}
+          onClick={(e) => handleClick(e, canvasRef)}
         />
           
           {/* <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
