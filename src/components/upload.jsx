@@ -24,7 +24,7 @@ function Upload() {
   const [measuredDistance, setMeasuredDistance] = useState(null);
   const [uploadStage, setUploadStage] = useState('parameters');
   const [wellCenters, setWellCenters] = useState([]);
-  
+
   const handleInputContainerClick = () => {
     fileInputRef.current.click();
   };
@@ -148,7 +148,6 @@ function Upload() {
         const rowCount = rowRef.current.value
         const columnCount = columnRef.current.value
         const diameter = measuredDistance
-        //const diameter = Math.round(0.5*(Math.abs(coordsOrigin.x-coordsEnd.x)/(columnCount-1) + Math.abs(coordsOrigin.y-coordsEnd.y)/(rowCount-1)))
         const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
         const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
         
@@ -160,7 +159,7 @@ function Upload() {
             ctx.arc(coordX, coordY,
                     diameter/2,0,Math.PI*2)
             ctx.stroke()
-            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn, 'indexRow' : indexRow}]))
+            
           }
         }
       }
@@ -270,11 +269,24 @@ function Upload() {
 
 
     const handleSubmit = () => {
-      setUploadStage('wellSelection');
-      
-      reset();
+      if (coordsEnd && coordsOrigin && measuredDistance) {
+        const offsetX = selectionOld ? selectionOld.x : 0
+        const offsetY = selectionOld ? selectionOld.y : 0
+        const rowCount = rowRef.current.value
+        const columnCount = columnRef.current.value
+        const diameter = measuredDistance
+        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
+        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
+        for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
+          for (let indexRow = 0; indexRow < rowCount; indexRow++) {
+            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
+            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY     
+            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn+1, 'indexRow' : indexRow+1}]))
+          }
+        }
+        setUploadStage('wellSelection');
+      }
     }
-
   return (
     <>
           <AnimatePresence mode="wait">
@@ -306,7 +318,7 @@ function Upload() {
       </button>)}
 
       {uploadStage == 'wellSelection' && (
-          <WellSelection originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
+          <WellSelection selectionOld={selectionOld} originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters}/>
         )}
       {uploadStage == 'calibration' && (
           <Calibration originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
@@ -327,9 +339,9 @@ function Upload() {
           onClick={(e) => handleClick(e, canvasRef)}
         />
           
-          {/* <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
+          <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
             Clicked at: ({coords.x}, {coords.y}, selection: {selectionOld ? selectionOld.x : ""}, {selectionOld ? selectionOld.y : ""}, {selectionOld ? selectionOld.w : ""}, {selectionOld ? selectionOld.h : ""})
-          </p> */}
+          </p>
         
 
         </div>

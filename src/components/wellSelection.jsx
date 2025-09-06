@@ -2,10 +2,10 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from 'framer-motion';
 import { canvas } from "motion/react-client";
-function WellSelection({setWellCenters, originalImage, measuredDistance, wellCenters, handleClick, loadImage, setUploadStage}) {
+function WellSelection({selectionOld, setWellCenters, originalImage, measuredDistance, wellCenters, loadImage, setUploadStage}) {
     const canvasRef = useRef()
     const [displayedImage, setDisplayedImage] = useState(originalImage);
-    const [wellType, setWellType] = useState('empty');
+    const [wellType, setWellType] = useState('sample');
     const [wells, setWells] = useState(wellCenters.map((center) => ({...center, type : 'empty'})));
     const [isDrawing, setIsDrawing] = useState(false); 
 
@@ -14,8 +14,19 @@ function WellSelection({setWellCenters, originalImage, measuredDistance, wellCen
       setUploadStage('calibration')
     }
 
+    function handleClick(e, canvasRef) {
+      const canvas = canvasRef.current;
+      if (!canvas) return { x: 0, y: 0 };
+      const rect = canvas.getBoundingClientRect();
+      const scaleX = canvas.width / rect.width;
+      const scaleY = canvas.height / rect.height;
+      const x = (e.clientX - rect.left) * scaleX;
+      const y = (e.clientY - rect.top) * scaleY;
+      return { x, y };
+    }
+
     function handleToggle(e) {
-      const clickCoords = handleClick(e, canvasRef)
+      let clickCoords = handleClick(e, canvasRef)
       let dist = 0
       wellCenters.forEach(center => {
         dist = Math.sqrt((center.x-clickCoords.x)**2 + (center.y-clickCoords.y)**2)
@@ -26,7 +37,7 @@ function WellSelection({setWellCenters, originalImage, measuredDistance, wellCen
                 ? { ...obj, type: wellType }
                 : obj
             )
-          );
+          )
           return 0; 
         }
       });
@@ -86,7 +97,7 @@ function WellSelection({setWellCenters, originalImage, measuredDistance, wellCen
         <div className="w-[min(90vw,50rem)]">
           <div className="flex gap-4 justify-center mt-6 flex-wrap">
             <button onClick={() => setWellType('empty')} className={`${wellType == 'empty' ? '!bg-red-500' : ""} btn`}>
-              Select Empty
+              Clear Well
             </button>
             <button onClick={() => setWellType('calibration')} className={`${wellType == 'calibration' ? '!bg-orange-500' : ""} btn`}>
               Select Calibration
@@ -94,7 +105,7 @@ function WellSelection({setWellCenters, originalImage, measuredDistance, wellCen
             <button onClick={() => setWellType('sample')} className={`${wellType == 'sample' ? '!bg-purple-500' : ""} btn`}>
               Select Sample
             </button>
-            <button onClick={submit} className={`!bg-green-500 btn`}>
+            <button onClick={submit} className={`font-bold !bg-green-500 btn`}>
               Submit
             </button>
           </div>

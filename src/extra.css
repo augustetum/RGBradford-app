@@ -49,6 +49,7 @@ button {
 }
 
 .inpt {
+    padding: 0.25rem 0.5rem;
     border: 2px black solid;
     border-radius: 0.5rem;
     width: 4rem;
