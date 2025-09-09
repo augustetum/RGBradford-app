@@ -1,0 +1,12 @@
+**/target/
+**/.mvn/
+**/.git
+**/.gitignore
+**/Dockerfile
+**/README.md
+**/HELP.md
+**/*.iml
+**/.idea/
+**/*.md
+fiji
+fiji-
