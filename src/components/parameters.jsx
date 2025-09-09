@@ -19,7 +19,9 @@ const Parameters = ({
   rowRef,
   coordsOrigin,
   coordsEnd,
-  measuredDistance
+  measuredDistance,
+  setRowCount,
+  setColumnCount,
 }) => {
   return (
     <div className="w-[min(90vw,50rem)]">
@@ -69,11 +71,11 @@ const Parameters = ({
       <form className="mt-6 flex gap-4 text-xl justify-center flex-wrap" action="">
         <span>
           <p className="!text-white">Columns</p>
-          <input className="inpt" type="number" name="columns" ref={columnRef} id="columns" defaultValue="12" />
+          <input className="inpt" type="number" name="columns" ref={columnRef} id="columns" defaultValue="12" onChange={(e) => setColumnCount(e.target.value)}/>
         </span>
         <span>
           <p className="!text-white">Rows</p>
-          <input className="inpt" type="number" name="rows" ref={rowRef} id="rows" defaultValue="8" />
+          <input className="inpt" type="number" name="rows" ref={rowRef} id="rows" defaultValue="8" onChange={(e) => setRowCount(e.target.value)}/>
         </span>
         <span>
           <p className="!text-white">xOrigin</p>

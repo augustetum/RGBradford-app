@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function Calibration({setWellCenters, wellCenters, setUploadStage}) {
+function Calibration({setWellCenters, wellCenters, setUploadStage, handleFinalSubmit}) {
   const [inputConcentrations, setInputConcentrations] = useState({}); 
   const calibrationWells = wellCenters.filter((c) => c.type === 'STANDARD');
   const maxRow = Math.max(...calibrationWells.map((c) => (c.indexRow)));
@@ -16,16 +16,16 @@ function Calibration({setWellCenters, wellCenters, setUploadStage}) {
   function submit(){
     const concentrationValues = Object.values(inputConcentrations)
     const uniqueConcentrations = concentrationValues.filter((item, index) => concentrationValues.indexOf(item) === index)    
-    setWellCenters(prev =>
-      prev.map(obj => {
+    const updatedWellCenters = wellCenters.map(obj => {
       const key = String(obj.indexRow) + '-' + String(obj.indexColumn)
       if (obj.type === 'STANDARD' && inputConcentrations[key]) {
-        return ({...obj, standardConcentration: inputConcentrations[key],  replicateGroup: uniqueConcentrations.indexOf(inputConcentrations[key])})
+        return ({...obj, standardConcentration: parseFloat(inputConcentrations[key]),  replicateGroup: uniqueConcentrations.indexOf(inputConcentrations[key])})
       } 
       else {return ({...obj})}
-      })
-    )
-    console.log(wellCenters.filter(item => item.type === 'STANDARD'))
+    })
+    setWellCenters(updatedWellCenters)
+    console.log(updatedWellCenters.filter(item => item.type === 'STANDARD'))
+    handleFinalSubmit(updatedWellCenters)
   } 
   return(
     <div className="w-[min(90vw, 50rem)]">

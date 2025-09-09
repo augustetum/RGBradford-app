@@ -12,7 +12,7 @@ import Login from './components/login.jsx'
 
 function App() {
   const [currentProject, setProject] = useState(null)
-  const [currentScreen, setCurrentScreen] = useState('login') // catalog
+  const [currentScreen, setCurrentScreen] = useState('login')
   const projects = data.projects.sort(function (a, b) {
     return Date.parse(b.creationDate) - Date.parse(a.creationDate);
   }) 
@@ -39,7 +39,7 @@ function App() {
        transition={{ duration: 0.2 }}
       >
       {currentScreen === 'signup' && (
-        <Signup />
+        <Signup/>
       )}
       {currentScreen === 'login' && (
         <Login />

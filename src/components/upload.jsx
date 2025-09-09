@@ -6,6 +6,7 @@ import Calibration from "./calibration.jsx";
 import Crop from "./crop.jsx";
 import Parameters from "./parameters.jsx";
 import tutorial from "../tutorial.jsx";
+
 function Upload() {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
@@ -27,10 +28,143 @@ function Upload() {
   const [measuredDistance, setMeasuredDistance] = useState(null);
   const [uploadStage, setUploadStage] = useState('upload');
   const [wellCenters, setWellCenters] = useState([]);
-
-  const handleInputContainerClick = () => {
-    fileInputRef.current.click();
+  const [name, setName] = useState();
+  const [description, setDescription] = useState();
+  const [projectId, setProjectId] = useState(); 
+  const [rowCount, setRowCount] = useState(8); 
+  const [columnCount, setColumnCount] = useState(12); 
+  const [plateId, setPlateId] = useState();
+  
+  const getFileExtension = (mimeType) => {
+    const extensions = {
+      'image/jpeg': 'jpg',
+      'image/png': 'png',
+      'image/heic': 'heic',
+    };
+    return extensions[mimeType] || 'jpg';
   };
+
+
+  const handleDescriptionName = async (e, name, description) => {
+    e.preventDefault();
+    const token = localStorage.getItem("token");
+    try {
+      const response = await fetch("https://rgbradford-app.onrender.com/api/projects", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ name, description }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        setProjectId(data.id)
+        alert("Project creation successful!", data.id);
+      } else {
+        alert(data.message || "Project creation failed");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("⚠️ Server error. Try again later.");
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    const token = localStorage.getItem("token");
+    console.log("id", projectId)
+    try {
+      const response = await fetch("https://rgbradford-app.onrender.com/api/plate-layouts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({ 
+          row: rowCount, 
+          column: columnCount, 
+          projectId: projectId, 
+        }),
+      });
+      const data = await response.json();
+      if (response.ok) {
+        const currentPlateId = data.id
+        setPlateId(currentPlateId)
+        alert("R/C and id submit successful!");
+        const refactoredWells = wellCenters.map(obj => ({
+          row: obj.indexRow, 
+          column: obj.indexColumn,
+          type: obj.type,
+          standardConcentration: obj.standardConcentration,
+          replicateGroup: obj.replicateGroup, 
+        }))
+        try {
+          console.log(refactoredWells.length)
+          const response2 = await fetch(`https://rgbradford-app.onrender.com/api/plate-layouts/${currentPlateId}/wells`, {
+            method: "POST", 
+            headers: {
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`,
+            },
+            body: JSON.stringify(refactoredWells),
+          })
+          if (response2.ok) {
+            alert("all good chief")
+            const extension = getFileExtension(displayedImage.type);
+            const file = new File([displayedImage], `image.${extension}`, {
+              type: displayedImage.type,
+              lastModified: Date.now()
+            });
+            const formData = new FormData();
+            formData.append('image', file);
+            formData.append("plateLayoutId", parseInt(currentPlateId));
+            formData.append("params", JSON.stringify({
+              columns: columnCount,
+              rows: rowCount,
+              xorigin: coordsOrigin.x,
+              yorigin: coordsOrigin.y,
+              xend: coordsEnd.x,
+              yend: coordsEnd.y,
+              wellDiameter: measuredDistance,
+            })); 
+            try {
+              const response2 = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/analyze`, {
+                method: "POST", 
+                headers: {
+                  "Authorization": `Bearer ${token}`,
+                },
+                body: formData,
+              })
+              if (response2.ok) {
+                alert("all good chief x2")
+              }
+              else {
+                alert("failed 3rd req")
+              }
+            } catch (error) {
+              console.error("Error:", error);
+              alert("⚠️ req 2 error. Try again later.");
+            }
+          }
+          else {
+            alert("failed 2nd req")
+          }
+        } catch (error) {
+          console.error("Error:", error);
+          alert("⚠️ req 2 error. Try again later.");
+        }
+        
+      } else {
+        alert(data.message || "failed");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("⚠️ req 1 error. Try again later.");
+    }
+  };
+
+
+
 
   const handleUpload = (e) => {
     const file = e.target.files[0];
@@ -45,6 +179,7 @@ function Upload() {
         originalImgRef.current = img;
       };
       img.src = url;
+      handleDescriptionName(e, name, description)
     }
   };
 
@@ -52,12 +187,12 @@ function Upload() {
     const img = new Image();
     img.onload = () => {
       originalImgRef.current = img
-      console.log(originalImgRef)
       ;};
     img.src = url;
   };
 
   const handleClick = (e, ref) => {
+
     const canvas = ref.current;
     const img = originalImgRef.current
     if (!canvas) {console.log("no canvas"); return;}
@@ -154,8 +289,6 @@ function Upload() {
       if (coordsEnd && coordsOrigin && measuredDistance) {
         const offsetX = selectionOld ? selectionOld.x : 0
         const offsetY = selectionOld ? selectionOld.y : 0
-        const rowCount = rowRef.current.value
-        const columnCount = columnRef.current.value
         const diameter = measuredDistance
         const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
         const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
@@ -281,8 +414,6 @@ function Upload() {
       if (coordsEnd && coordsOrigin && measuredDistance) {
         const offsetX = 0
         const offsetY = 0
-        const rowCount = rowRef.current.value
-        const columnCount = columnRef.current.value
         const diameter = measuredDistance
         const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
         const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
@@ -298,6 +429,10 @@ function Upload() {
       }
     }
     
+    const handleInputContainerClick = (e) => {
+      fileInputRef.current.click();
+    };
+
   return (
     <>
       <AnimatePresence mode="wait">
@@ -316,6 +451,7 @@ function Upload() {
       {tutorial[uploadStage]}
 
       {uploadStage === 'upload' && (
+        <>
         <button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray 
           rounded-xl flex justify-center items-center'>
         <div>
@@ -329,7 +465,13 @@ function Upload() {
           />
           <p>upload plate</p>
         </div>
-      </button>)}
+      </button>
+      <form action="" className="flex gap-10 justify-center mt-4">
+        <span>name<input type="text" className="inpt" onChange={(e) => setName(e.target.value)}/></span>
+        <span>desc<input type="text" className="inpt" onChange={(e) => setDescription(e.target.value)}/></span>
+      </form>
+      </>
+    )}
 
       {image && (uploadStage === 'parameters' || uploadStage === 'crop') && (
         <div className="mb-6">
@@ -391,6 +533,8 @@ function Upload() {
           coordsOrigin={coordsOrigin}
           coordsEnd={coordsEnd}
           measuredDistance={measuredDistance}
+          setColumnCount={setColumnCount}
+          setRowCount={setRowCount}
         />
       )}
 
@@ -409,6 +553,7 @@ function Upload() {
 
       {uploadStage == 'calibration' && (
       <Calibration 
+        handleFinalSubmit={handleFinalSubmit}
         setUploadStage={setUploadStage}
         setWellCenters={setWellCenters}
         wellCenters={wellCenters}
