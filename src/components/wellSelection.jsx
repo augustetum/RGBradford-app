@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { AnimatePresence, motion } from 'framer-motion';
 import { canvas } from "motion/react-client";
-function WellSelection({selectionOld, setWellCenters, originalImage, measuredDistance, wellCenters, loadImage, setUploadStage}) {
+function WellSelection({ setWellCenters, originalImage, measuredDistance, wellCenters, loadImage, setUploadStage}) {
     const canvasRef = useRef()
     const [displayedImage, setDisplayedImage] = useState(originalImage);
     const [wellType, setWellType] = useState('sample');
@@ -47,7 +47,7 @@ function WellSelection({selectionOld, setWellCenters, originalImage, measuredDis
         const canvas = canvasRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
-        const colorDict = {'sample' : 'rgba(173, 70, 255, 0.5)', 'calibration' : 'rgba(255, 105, 0, 0.5)', 'empty' : 'rgba(0,0,0,0)'}
+        const colorDict = {'sample' : 'rgba(173, 70, 255, 0.5)', 'STANDARD' : 'rgba(255, 105, 0, 0.5)', 'empty' : 'rgba(0,0,0,0)'}
         const img = await loadImage(displayedImage);
         const width = img.naturalWidth || img.width;
         const height = img.naturalHeight || img.height;
@@ -99,7 +99,7 @@ function WellSelection({selectionOld, setWellCenters, originalImage, measuredDis
             <button onClick={() => setWellType('empty')} className={`${wellType == 'empty' ? '!bg-red-500' : ""} btn`}>
               Clear Well
             </button>
-            <button onClick={() => setWellType('calibration')} className={`${wellType == 'calibration' ? '!bg-orange-500' : ""} btn`}>
+            <button onClick={() => setWellType('STANDARD')} className={`${wellType == 'STANDARD' ? '!bg-orange-500' : ""} btn`}>
               Select Calibration
             </button>
             <button onClick={() => setWellType('sample')} className={`${wellType == 'sample' ? '!bg-purple-500' : ""} btn`}>

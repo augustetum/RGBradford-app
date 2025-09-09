@@ -17,7 +17,7 @@ function Crop({
 }) {
   return (
     <div className="w-[min(90vw,50rem)] flex gap-4 justify-center mt-6 flex-wrap">
-      <button onClick={() => setImage(null)} className="btn">
+      <button onClick={() => {setImage(null); setUploadStage('upload')}} className="btn">
         Clear Image
       </button>
       <button

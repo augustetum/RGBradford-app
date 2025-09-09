@@ -1,35 +1,34 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
-import { AnimatePresence, motion } from 'framer-motion';
+import React, { useState } from "react";
 
-function Calibration({setWellCenters, originalImage, measuredDistance, wellCenters, handleClick, loadImage, setUploadStage}) {
+function Calibration({setWellCenters, wellCenters, setUploadStage}) {
   const [inputConcentrations, setInputConcentrations] = useState({}); 
-  const calibrationWells = wellCenters.filter((c) => c.type === 'calibration');
+  const calibrationWells = wellCenters.filter((c) => c.type === 'STANDARD');
   const maxRow = Math.max(...calibrationWells.map((c) => (c.indexRow)));
   const maxColumn = Math.max(...calibrationWells.map((c) => (c.indexColumn)));
   const minRow = Math.min(...calibrationWells.map((c) => (c.indexRow)));
   const minColumn = Math.min(...calibrationWells.map((c) => (c.indexColumn)));
   
   const alphabet = Object.fromEntries(
-    Array.from({ length: 26 }, (_, i) => [i + 1, String.fromCharCode(65 + i)])
+    Array.from({ length: 26 }, (_, i) => [i, String.fromCharCode(65 + i)])
   );
   const range = (start, end) => [...Array(end - start + 1)].map((_, i) => start + i);
 
   function submit(){
+    const concentrationValues = Object.values(inputConcentrations)
+    const uniqueConcentrations = concentrationValues.filter((item, index) => concentrationValues.indexOf(item) === index)    
     setWellCenters(prev =>
       prev.map(obj => {
       const key = String(obj.indexRow) + '-' + String(obj.indexColumn)
-      if (obj.type === 'calibration' && inputConcentrations[key]) {
-        return ({...obj, concentration: inputConcentrations[key]})
+      if (obj.type === 'STANDARD' && inputConcentrations[key]) {
+        return ({...obj, standardConcentration: inputConcentrations[key],  replicateGroup: uniqueConcentrations.indexOf(inputConcentrations[key])})
       } 
       else {return ({...obj})}
       })
     )
-    console.log(wellCenters)
+    console.log(wellCenters.filter(item => item.type === 'STANDARD'))
   } 
-  console.log(inputConcentrations)
   return(
     <div className="w-[min(90vw, 50rem)]">
-      <h2 className="text-2xl mb-4">Enter the concentrations for the calibration wells</h2>
       <div className={`grid gap-4`}     
       style={{
       gridTemplateColumns: `4rem repeat(${maxColumn - minColumn + 1}, minmax(0,1fr))`,
@@ -63,7 +62,7 @@ function Calibration({setWellCenters, originalImage, measuredDistance, wellCente
             gridColumn: `${val - minColumn + 2} / ${val - minColumn + 3}`,
             gridRow: `1 / 2`,            
           }}>
-            {val}
+            {val+1}
           </p>
         ))}
         <div className="bg-igem-gray rounded-xl border-2 border-black" 

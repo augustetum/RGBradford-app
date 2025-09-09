@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import WellSelection from "./wellSelection.jsx";
 import Calibration from "./calibration.jsx";
 import Crop from "./crop.jsx";
+import Parameters from "./parameters.jsx";
+import tutorial from "../tutorial.jsx";
 function Upload() {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
@@ -25,7 +27,6 @@ function Upload() {
   const [measuredDistance, setMeasuredDistance] = useState(null);
   const [uploadStage, setUploadStage] = useState('upload');
   const [wellCenters, setWellCenters] = useState([]);
-  const [cropOffset, setCropOffset] = useState({});
 
   const handleInputContainerClick = () => {
     fileInputRef.current.click();
@@ -38,6 +39,7 @@ function Upload() {
       setOriginalImage(url);
       setImage(url);
       setDisplayedImage(url);
+      setUploadStage('crop');
       const img = new Image();
       img.onload = () => {
         originalImgRef.current = img;
@@ -90,9 +92,6 @@ function Upload() {
       });
     }, []);
     
-
-    
-
     const draw = useCallback(async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
@@ -280,10 +279,6 @@ function Upload() {
 
     const handleSubmit = () => {
       if (coordsEnd && coordsOrigin && measuredDistance) {
-        
-        //const offsetX = selectionOld ? selectionOld.x : 0
-        //const offsetY = selectionOld ? selectionOld.y : 0
-
         const offsetX = 0
         const offsetY = 0
         const rowCount = rowRef.current.value
@@ -295,7 +290,7 @@ function Upload() {
           for (let indexRow = 0; indexRow < rowCount; indexRow++) {
             let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
             let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY     
-            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn+1, 'indexRow' : indexRow+1}]))
+            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn, 'indexRow' : indexRow}]))
           }
         }
         reset()
@@ -305,7 +300,7 @@ function Upload() {
     
   return (
     <>
-          <AnimatePresence mode="wait">
+      <AnimatePresence mode="wait">
       <motion.div
        key={image}
        initial={{ opacity: 0, y: 20 }}
@@ -318,7 +313,10 @@ function Upload() {
         }
       }}
       >
-        {!image &&(<button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray 
+      {tutorial[uploadStage]}
+
+      {uploadStage === 'upload' && (
+        <button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray 
           rounded-xl flex justify-center items-center'>
         <div>
           <img src={plusIcon} className='mx-auto w-10 ' />
@@ -333,106 +331,89 @@ function Upload() {
         </div>
       </button>)}
 
-      {uploadStage == 'wellSelection' && (
-          <WellSelection selectionOld={selectionOld} originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters}/>
-        )}
-      {uploadStage == 'calibration' && (
-          <Calibration originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
-        )}
-      
-      {(uploadStage === 'parameters' || uploadStage === 'upload') && ( 
-        <div className={`${image ? "" : "hidden"} mb-6 `}>
-        <div className=" p-2 bg-igem-gray 
-          rounded-xl flex flex-col">
-          
-        <canvas
-          ref={canvasRef}
-          onPointerDown={onPointerDown}
-          onPointerMove={onPointerMove}
-          onPointerUp={onPointerUp}
-          onPointerLeave={onPointerLeave}
-          className="border rounded-2xl shadow w-auto h-full touch-none"
-          onClick={(e) => handleClick(e, canvasRef)}
-        />
-          
-          <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
-            Clicked at: ({coords.x}, {coords.y}, selection: {selectionOld ? selectionOld.x : ""}, {selectionOld ? selectionOld.y : ""}, {selectionOld ? selectionOld.w : ""}, {selectionOld ? selectionOld.h : ""})
-          </p>
+      {image && (uploadStage === 'parameters' || uploadStage === 'crop') && (
+        <div className="mb-6">
+          <div className="p-2 bg-igem-gray rounded-xl flex flex-col">
+            <canvas
+              ref={canvasRef}
+              onPointerDown={onPointerDown}
+              onPointerMove={onPointerMove}
+              onPointerUp={onPointerUp}
+              onPointerLeave={onPointerLeave}
+              className="border rounded-2xl shadow w-auto h-full touch-none"
+              onClick={(e) => handleClick(e, canvasRef)}
+            />
+            {uploadStage === 'parameters' && (
+              <p className="mt-4 !text-igem-black text-lg font-mono">
+                Clicked at: ({coords.x}, {coords.y})
+              </p>
+            )}
+          </div>
         </div>
+      )}
         
-        {uploadStage === 'upload' && (
-        <Crop 
-          setImage={setImage}
+      {(uploadStage === 'crop') && (
+      <Crop 
+        setImage={setImage}
+        toggleSelectMode={toggleSelectMode}
+        setSizeMode={setSizeMode}
+        selectMode={selectMode}
+        crop={crop}
+        selection={selection}
+        reset={reset}
+        setRefFromUrl={setRefFromUrl}
+        displayedImage={displayedImage}
+        setUploadStage={setUploadStage}
+        setSelectMode={setSelectMode}
+        setOriginalImage={setOriginalImage}
+        setOldSelection={setOldSelection}
+      />
+    )}
+
+      {uploadStage === 'parameters' && (
+        <Parameters
+          coords={coords}
+          setCoordsOrigin={setCoordsOrigin}
+          setCoordsEnd={setCoordsEnd}
           toggleSelectMode={toggleSelectMode}
           setSizeMode={setSizeMode}
           selectMode={selectMode}
           crop={crop}
           selection={selection}
           reset={reset}
-          setRefFromUrl={setRefFromUrl}
-          displayedImage={displayedImage}
-          setUploadStage={setUploadStage}
+          sizeMode={sizeMode}
           setSelectMode={setSelectMode}
-          setOriginalImage={setOriginalImage}
-          setOldSelection={setOldSelection}
+          setIsDrawing={setIsDrawing}
+          setSizeLine={setSizeLine}
+          handleSubmit={handleSubmit}
+          columnRef={columnRef}
+          rowRef={rowRef}
+          coordsOrigin={coordsOrigin}
+          coordsEnd={coordsEnd}
+          measuredDistance={measuredDistance}
         />
       )}
 
-        {uploadStage === 'parameters' && (<div className="w-[min(90vw,50rem)]">
-          <div className="flex gap-4 justify-center mt-6 flex-wrap">
-            <button onClick={() => {setCoordsOrigin({ ...coords });}} className="btn">
-              Set Top Left Well Coordinates
-            </button>
-            <button onClick={() => {setCoordsEnd({ ...coords });}} className="btn">
-              Set Bottom Right Well Coordinates
-            </button>
-            <button
-              onClick={() => {toggleSelectMode(); setSizeMode(false);}}
-              className={`btn ${
-                selectMode ? "!bg-red-600 !text-white" : ""
-              }`}
-            >
-              {selectMode ? "Exit Zoom Mode" : "Enter Zoom Mode"}
-            </button>
-            <button
-              onClick={crop}
-              disabled={!selection || selection.w === 0 || selection.h === 0}
-              className="btn"
-            >
-              Zoom
-            </button>
-            <button
-              onClick={reset}
-              className="btn"
-            >
-              Reset Zoom
-            </button>
-            <button
-              onClick={() => {
-                setSizeMode((m) => !m);
-                setSelectMode(false); // turn off rectangle select when size mode is on
-                setIsDrawing(false);
-                setSizeLine(null);
-              }}
-              className={`btn ${sizeMode ? "!bg-red-600 !text-white" : ""}`}
-            >
-              {sizeMode ? "Exit Diameter Select Mode" : "Enter Diameter Select Mode"}
-            </button>
-            <button onClick={handleSubmit} className="btn !bg-green-500 font-bold">
-              Submit
-            </button>
-          </div>
-          <form className="mt-6 flex gap-4 text-xl justify-center flex-wrap" action="">
-            <span ><p className="!text-white">Columns</p><input className="inpt" type="number" name="columns" ref={columnRef} id="columns" defaultValue="12" /></span>
-            <span><p className="!text-white">Rows</p><input className="inpt" type="number" name="rows" ref={rowRef} id="rows" defaultValue="8" /></span>
-            <span><p className="!text-white">xOrigin</p><input className="inpt" readOnly={true}  name="xOrigin" id="xOrigin" value={coordsOrigin ? coordsOrigin.x : ""} /></span>
-            <span><p className="!text-white">yOrigin</p><input className="inpt" readOnly={true}  name="yOrigin" id="yOrigin" value={coordsOrigin ? coordsOrigin.y : ""} /></span>
-            <span><p className="!text-white">xEnd</p><input className="inpt" readOnly={true}  name="xEnd" id="xEnd" value={coordsEnd ? coordsEnd.x : ""} /></span>
-            <span><p className="!text-white">yEnd</p><input className="inpt" readOnly={true}  name="yEnd" id="yEnd" value={coordsEnd ? coordsEnd.y : ""} /></span>
-            <span><p className="!text-white">wellDiameter</p><input className="inpt" readOnly={true}  name="wellDiameter" id="wellDiameter" value={measuredDistance ? Math.round(measuredDistance/2) : ""} /></span>
-          </form>
-        </div>)}
-    </div>)}
+
+      {uploadStage == 'wellSelection' && (
+      <WellSelection 
+        originalImage={displayedImage}
+        setUploadStage={setUploadStage}
+        setWellCenters={setWellCenters}
+        getPointerPos={getPointerPos}
+        measuredDistance={measuredDistance}
+        loadImage={loadImage}
+        wellCenters={wellCenters}
+      />
+      )}
+
+      {uploadStage == 'calibration' && (
+      <Calibration 
+        setUploadStage={setUploadStage}
+        setWellCenters={setWellCenters}
+        wellCenters={wellCenters}
+      />
+      )}
     </motion.div>
     </AnimatePresence>
     </>

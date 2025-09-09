@@ -29,7 +29,7 @@ function App() {
 
   return (
     <div className='text-center text-igem-white bg-igem-dblue min-h-[100vh] flex flex-col'>
-      <div className={`mx-auto w-200 mt-10 mb-30 max-w-[min(90vw,50rem)]`}>
+      <div className={`mx-auto w-200 mt-10 mb-35 max-w-[min(90vw,50rem)]`}>
       <AnimatePresence mode="wait">
       <motion.div
        key={currentScreen}
