@@ -14,6 +14,7 @@ public class WellResponse {
     private Long id;
     private int row;
     private int column;
+    private String position;  // Human-readable position (e.g., "A1", "B2")
     private WellType type;
     private Double standardConcentration;
     private String sampleName;
