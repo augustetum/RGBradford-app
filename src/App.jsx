@@ -7,10 +7,12 @@ import Project from './components/project.jsx'
 import { AnimatePresence, motion } from 'framer-motion';
 import Account from './components/account.jsx'
 import Upload from './components/upload.jsx'
+import Signup from './components/signup.jsx'
+import Login from './components/login.jsx'
 
 function App() {
   const [currentProject, setProject] = useState(null)
-  const [currentScreen, setCurrentScreen] = useState('catalog')
+  const [currentScreen, setCurrentScreen] = useState('login') // catalog
   const projects = data.projects.sort(function (a, b) {
     return Date.parse(b.creationDate) - Date.parse(a.creationDate);
   }) 
@@ -36,6 +38,12 @@ function App() {
        exit={{ opacity: 0, y: -20 }}
        transition={{ duration: 0.2 }}
       >
+      {currentScreen === 'signup' && (
+        <Signup />
+      )}
+      {currentScreen === 'login' && (
+        <Login />
+      )}
       {currentScreen === 'catalog' && (<>
       <Hero name={data.name}/>
       <ProjectList projects={projects} handleSwitch={handleSwitch}/>

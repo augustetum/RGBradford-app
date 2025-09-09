@@ -3,6 +3,7 @@ import plusIcon from "../assets/plus.svg"
 import { AnimatePresence, motion } from 'framer-motion';
 import WellSelection from "./wellSelection.jsx";
 import Calibration from "./calibration.jsx";
+import Crop from "./crop.jsx";
 function Upload() {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
@@ -22,8 +23,9 @@ function Upload() {
   const [sizeMode, setSizeMode] = useState(false);
   const [sizeLine, setSizeLine] = useState(null); // { x1, y1, x2, y2 }
   const [measuredDistance, setMeasuredDistance] = useState(null);
-  const [uploadStage, setUploadStage] = useState('parameters');
+  const [uploadStage, setUploadStage] = useState('upload');
   const [wellCenters, setWellCenters] = useState([]);
+  const [cropOffset, setCropOffset] = useState({});
 
   const handleInputContainerClick = () => {
     fileInputRef.current.click();
@@ -44,12 +46,20 @@ function Upload() {
     }
   };
 
+  const setRefFromUrl = (url) => {
+    const img = new Image();
+    img.onload = () => {
+      originalImgRef.current = img
+      console.log(originalImgRef)
+      ;};
+    img.src = url;
+  };
+
   const handleClick = (e, ref) => {
     const canvas = ref.current;
     const img = originalImgRef.current
     if (!canvas) {console.log("no canvas"); return;}
     const rect = canvas.getBoundingClientRect();
-    
     const x = e.clientX - rect.left;
     const y = e.clientY - rect.top;
     
@@ -270,8 +280,12 @@ function Upload() {
 
     const handleSubmit = () => {
       if (coordsEnd && coordsOrigin && measuredDistance) {
-        const offsetX = selectionOld ? selectionOld.x : 0
-        const offsetY = selectionOld ? selectionOld.y : 0
+        
+        //const offsetX = selectionOld ? selectionOld.x : 0
+        //const offsetY = selectionOld ? selectionOld.y : 0
+
+        const offsetX = 0
+        const offsetY = 0
         const rowCount = rowRef.current.value
         const columnCount = columnRef.current.value
         const diameter = measuredDistance
@@ -284,9 +298,11 @@ function Upload() {
             setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn+1, 'indexRow' : indexRow+1}]))
           }
         }
+        reset()
         setUploadStage('wellSelection');
       }
     }
+    
   return (
     <>
           <AnimatePresence mode="wait">
@@ -324,7 +340,7 @@ function Upload() {
           <Calibration originalImage={displayedImage} setUploadStage={setUploadStage} setWellCenters={setWellCenters} getPointerPos={getPointerPos} measuredDistance={measuredDistance} loadImage={loadImage} wellCenters={wellCenters} handleClick={handleClick}/>
         )}
       
-      {uploadStage == 'parameters' && ( 
+      {(uploadStage === 'parameters' || uploadStage === 'upload') && ( 
         <div className={`${image ? "" : "hidden"} mb-6 `}>
         <div className=" p-2 bg-igem-gray 
           rounded-xl flex flex-col">
@@ -342,15 +358,28 @@ function Upload() {
           <p className={`${uploadStage == 'parameters' ? "" : "hidden"} mt-4 !text-igem-black  text-lg font-mono`}>
             Clicked at: ({coords.x}, {coords.y}, selection: {selectionOld ? selectionOld.x : ""}, {selectionOld ? selectionOld.y : ""}, {selectionOld ? selectionOld.w : ""}, {selectionOld ? selectionOld.h : ""})
           </p>
-        
-
         </div>
         
-        <div className="w-[min(90vw,50rem)]">
+        {uploadStage === 'upload' && (
+        <Crop 
+          setImage={setImage}
+          toggleSelectMode={toggleSelectMode}
+          setSizeMode={setSizeMode}
+          selectMode={selectMode}
+          crop={crop}
+          selection={selection}
+          reset={reset}
+          setRefFromUrl={setRefFromUrl}
+          displayedImage={displayedImage}
+          setUploadStage={setUploadStage}
+          setSelectMode={setSelectMode}
+          setOriginalImage={setOriginalImage}
+          setOldSelection={setOldSelection}
+        />
+      )}
+
+        {uploadStage === 'parameters' && (<div className="w-[min(90vw,50rem)]">
           <div className="flex gap-4 justify-center mt-6 flex-wrap">
-            <button onClick={() => setImage(null)} className="btn">
-              Clear Image
-            </button>
             <button onClick={() => {setCoordsOrigin({ ...coords });}} className="btn">
               Set Top Left Well Coordinates
             </button>
@@ -396,13 +425,13 @@ function Upload() {
           <form className="mt-6 flex gap-4 text-xl justify-center flex-wrap" action="">
             <span ><p className="!text-white">Columns</p><input className="inpt" type="number" name="columns" ref={columnRef} id="columns" defaultValue="12" /></span>
             <span><p className="!text-white">Rows</p><input className="inpt" type="number" name="rows" ref={rowRef} id="rows" defaultValue="8" /></span>
-            <span><p className="!text-white">xOrigin</p><input className="inpt" readOnly={true} type="number" name="xOrigin" id="xOrigin" value={coordsOrigin ? coordsOrigin.x : ""} /></span>
-            <span><p className="!text-white">yOrigin</p><input className="inpt" readOnly={true} type="number" name="yOrigin" id="yOrigin" value={coordsOrigin ? coordsOrigin.y : ""} /></span>
-            <span><p className="!text-white">xEnd</p><input className="inpt" readOnly={true} type="number" name="xEnd" id="xEnd" value={coordsEnd ? coordsEnd.x : ""} /></span>
-            <span><p className="!text-white">yEnd</p><input className="inpt" readOnly={true} type="number" name="yEnd" id="yEnd" value={coordsEnd ? coordsEnd.y : ""} /></span>
-            <span><p className="!text-white">wellDiameter</p><input className="inpt" readOnly={true} type="number" name="wellDiameter" id="wellDiameter" value={measuredDistance ? Math.round(measuredDistance/2) : ""} /></span>
+            <span><p className="!text-white">xOrigin</p><input className="inpt" readOnly={true}  name="xOrigin" id="xOrigin" value={coordsOrigin ? coordsOrigin.x : ""} /></span>
+            <span><p className="!text-white">yOrigin</p><input className="inpt" readOnly={true}  name="yOrigin" id="yOrigin" value={coordsOrigin ? coordsOrigin.y : ""} /></span>
+            <span><p className="!text-white">xEnd</p><input className="inpt" readOnly={true}  name="xEnd" id="xEnd" value={coordsEnd ? coordsEnd.x : ""} /></span>
+            <span><p className="!text-white">yEnd</p><input className="inpt" readOnly={true}  name="yEnd" id="yEnd" value={coordsEnd ? coordsEnd.y : ""} /></span>
+            <span><p className="!text-white">wellDiameter</p><input className="inpt" readOnly={true}  name="wellDiameter" id="wellDiameter" value={measuredDistance ? Math.round(measuredDistance/2) : ""} /></span>
           </form>
-        </div>
+        </div>)}
     </div>)}
     </motion.div>
     </AnimatePresence>
