@@ -37,10 +37,26 @@ public class SecurityConfig {
             .csrf(csrf -> csrf.disable())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> {
+                // Public endpoints
                 auth.requestMatchers("/api/auth/**").permitAll();
                 auth.requestMatchers("/api/plate-analysis/analyze").permitAll();
                 auth.requestMatchers("/api/plate-analysis/*/reanalyze").permitAll();
                 auth.requestMatchers("/api/plate-layouts/*/group-wells").permitAll();
+                auth.requestMatchers("/api/test/**").permitAll();
+                
+                // Swagger UI and API docs
+                auth.requestMatchers(
+                    "/swagger-ui/**",
+                    "/v3/api-docs/**",
+                    "/swagger-ui.html",
+                    "/api-docs/**",
+                    
+                    "/swagger-resources/**",
+                    "/webjars/**",
+                    "/configuration/**"
+                ).permitAll();
+                
+                // All other requests require authentication
                 auth.anyRequest().authenticated();
             })
             .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

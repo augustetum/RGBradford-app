@@ -1,6 +1,7 @@
 package com.rgbradford.backend.controller;
 
 import com.rgbradford.backend.dto.request.CreatePlateLayoutRequest;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import com.rgbradford.backend.dto.request.UpdatePlateLayoutRequest;
 import com.rgbradford.backend.dto.request.WellRequest;
 import com.rgbradford.backend.dto.request.WellPositionGroupingRequest;
@@ -29,6 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
@@ -41,9 +44,18 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Controller for managing plate layouts and their associated wells.
+ * Provides CRUD operations for plate layouts and their well configurations.
+ */
 @RestController
 @RequestMapping("/api/plate-layouts")
-@Tag(name = "Plate Layout", description = "APIs for managing plate layouts and wells")
+@Tag(
+    name = "Plate Layout",
+    description = "APIs for managing plate layouts and their well configurations. " +
+                 "Plate layouts define the arrangement of samples, standards, and controls in microplates."
+)
+@SecurityRequirement(name = "bearerAuth")
 public class PlateLayoutController {
 
     @Autowired
@@ -55,29 +67,99 @@ public class PlateLayoutController {
     @Autowired
     private ProjectRepository projectRepository;
 
-    // GET /api/plate-layouts - List all plate layouts
+    /**
+     * Retrieve all plate layouts with pagination support.
+     *
+     * @param pageable Pagination information (page, size, sort)
+     * @return Page of plate layouts with their basic information
+     */
+    @Operation(
+        summary = "List all plate layouts",
+        description = "Retrieves a paginated list of all plate layouts in the system. " +
+                    "Results can be sorted and filtered using standard Spring Data parameters."
+    )
+    @ApiResponse(
+        responseCode = "200",
+        description = "Successfully retrieved list of plate layouts"
+    )
     @GetMapping
-    public ResponseEntity<Page<PlateLayoutResponse>> getAllPlateLayouts(Pageable pageable) {
+    public ResponseEntity<Page<PlateLayoutResponse>> getAllPlateLayouts(
+            @Parameter(hidden = true) Pageable pageable) {
         Page<PlateLayout> plateLayouts = plateLayoutRepository.findAll(pageable);
         Page<PlateLayoutResponse> responses = plateLayouts.map(this::convertToResponse);
         return ResponseEntity.ok(responses);
     }
 
-    // GET /api/plate-layouts/{id} - Get specific plate layout
+    /**
+     * Retrieve a specific plate layout by its ID.
+     *
+     * @param id The ID of the plate layout to retrieve
+     * @return The requested plate layout with all its wells and configurations
+     */
+    @Operation(
+        summary = "Get plate layout by ID",
+        description = "Retrieves a specific plate layout with all its well configurations."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "200",
+            description = "Successfully retrieved the plate layout"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Plate layout not found"
+        )
+    })
     @GetMapping("/{id}")
-    public ResponseEntity<PlateLayoutResponse> getPlateLayout(@PathVariable Long id) {
+    public ResponseEntity<PlateLayoutResponse> getPlateLayout(
+            @Parameter(description = "ID of the plate layout to retrieve", required = true)
+            @PathVariable Long id) {
         return plateLayoutRepository.findById(id)
                 .map(this::convertToResponse)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /api/plate-layouts - Create new plate layout
+    /**
+     * Create a new plate layout with the specified configuration.
+     * 
+     * @param request The plate layout creation request
+     * @param userDetails The authenticated user details
+     * @return The created plate layout with its initial configuration
+     */
+    @Operation(
+        summary = "Create a new plate layout",
+        description = "Creates a new plate layout with the specified configuration. " +
+                    "The authenticated user must have access to the specified project."
+    )
+    @ApiResponses({
+        @ApiResponse(
+            responseCode = "201",
+            description = "Successfully created the plate layout"
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid request or project already has a plate layout"
+        ),
+        @ApiResponse(
+            responseCode = "401",
+            description = "Authentication required"
+        ),
+        @ApiResponse(
+            responseCode = "403",
+            description = "Not authorized to access the specified project"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Project not found"
+        )
+    })
     @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
     @Transactional
     public ResponseEntity<PlateLayoutResponse> createPlateLayout(
             @Valid @RequestBody CreatePlateLayoutRequest request,
-            @AuthenticationPrincipal UserDetails userDetails) {
+            @Parameter(hidden = true) @AuthenticationPrincipal UserDetails userDetails) {
         
         try {
             // Get the authenticated user's email
