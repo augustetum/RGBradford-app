@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import Footer from './components/footer.jsx'
 import Hero from './components/hero.jsx'
 import data from './data.js'
@@ -12,12 +12,36 @@ import Login from './components/login.jsx'
 
 function App() {
   const [currentProject, setProject] = useState(null)
-  const [currentScreen, setCurrentScreen] = useState('login')
-  const projects = data.projects.sort(function (a, b) {
-    return Date.parse(b.creationDate) - Date.parse(a.creationDate);
-  }) 
-  
+  const [currentScreen, setCurrentScreen] = useState('signup')    
+  const [projects, setProjects] = useState([])
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+
+  useEffect(() => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setCurrentScreen('login');
+  }, []);
+
+  const handleLogin = (loginData) => {
+    if (loginData && loginData.token) {
+      localStorage.setItem('token', loginData.token);
+      setIsAuthenticated(true);
+      setCurrentScreen('catalog');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setIsAuthenticated(false);
+    setCurrentScreen('login');
+  };
+
   function handleSwitch(project, newScreen) {
+    if (!isAuthenticated && newScreen !== 'login' && newScreen !== 'signup') {
+      setCurrentScreen('login');
+      alert('Please log in to access this page');
+      return;
+    }
     switchScreen(project, newScreen)
   }
 
@@ -39,23 +63,26 @@ function App() {
        transition={{ duration: 0.2 }}
       >
       {currentScreen === 'signup' && (
-        <Signup/>
+        <Signup setCurrentScreen={setCurrentScreen}/>
       )}
       {currentScreen === 'login' && (
-        <Login />
+        <Login setCurrentScreen={setCurrentScreen} onLogin={handleLogin}/>
       )}
-      {currentScreen === 'catalog' && (<>
+      {!isAuthenticated && currentScreen !== 'login' && currentScreen !== 'signup' && (
+        <Login setCurrentScreen={setCurrentScreen} onLogin={handleLogin}/>
+      )}
+      {currentScreen === 'catalog' && isAuthenticated && (<>
       <Hero name={data.name}/>
-      <ProjectList projects={projects} handleSwitch={handleSwitch}/>
+      <ProjectList projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
       </>)}
-      {currentScreen === 'project' && (
-        <Project projects={projects} currentProject={currentProject}/>
+      {currentScreen === 'project' && isAuthenticated && (
+        <Project currentProject={currentProject}/>
       )}
-      {currentScreen === 'account' && (
-        <Account data={data}/>
+      {currentScreen === 'account' && isAuthenticated && (
+        <Account data={data} onLogout={handleLogout}/>
       )}
-      {currentScreen === 'upload' && (
-        <Upload />
+      {currentScreen === 'upload' && isAuthenticated && (
+        <Upload setCurrentScreen={setCurrentScreen}/>
       )}  
       </motion.div>
       </AnimatePresence>

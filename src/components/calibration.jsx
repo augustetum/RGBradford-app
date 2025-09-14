@@ -19,7 +19,7 @@ function Calibration({setWellCenters, wellCenters, setUploadStage, handleFinalSu
     const updatedWellCenters = wellCenters.map(obj => {
       const key = String(obj.indexRow) + '-' + String(obj.indexColumn)
       if (obj.type === 'STANDARD' && inputConcentrations[key]) {
-        return ({...obj, standardConcentration: parseFloat(inputConcentrations[key]),  replicateGroup: uniqueConcentrations.indexOf(inputConcentrations[key])})
+        return ({...obj, standardConcentration: parseFloat(inputConcentrations[key]),  replicateGroup: "std_" + String(inputConcentrations[key])})
       } 
       else {return ({...obj})}
     })

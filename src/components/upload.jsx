@@ -7,7 +7,7 @@ import Crop from "./crop.jsx";
 import Parameters from "./parameters.jsx";
 import tutorial from "../tutorial.jsx";
 
-function Upload() {  
+function Upload({setCurrentScreen}) {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
   const [coordsOrigin, setCoordsOrigin] = useState(null);
@@ -45,125 +45,163 @@ function Upload() {
   };
 
 
-  const handleDescriptionName = async (e, name, description) => {
-    e.preventDefault();
-    const token = localStorage.getItem("token");
-    try {
-      const response = await fetch("https://rgbradford-app.onrender.com/api/projects", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, description }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setProjectId(data.id)
-        alert("Project creation successful!", data.id);
-      } else {
-        alert(data.message || "Project creation failed");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("⚠️ Server error. Try again later.");
-    }
+  const createProject = async (name, description, token) => {
+  const response = await fetch("https://rgbradford-app.onrender.com/api/projects", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ name, description }),
+  });
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Project creation failed");
+  }
+  
+  return data.id;
+};
+
+const createPlateLayout = async (projectId, rowCount, columnCount, token) => {
+  const response = await fetch("https://rgbradford-app.onrender.com/api/plate-layouts", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify({ 
+      row: rowCount, 
+      column: columnCount, 
+      projectId: projectId, 
+    }),
+  });
+  
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || "Plate layout creation failed");
+  }
+  
+  return data.id;
+};
+
+const submitWells = async (plateId, wellCenters, token) => {
+  const refactoredWells = wellCenters.map(obj => ({
+    row: obj.indexRow, 
+    column: obj.indexColumn,
+    type: obj.type,
+    standardConcentration: obj.standardConcentration,
+    replicateGroup: obj.replicateGroup, 
+  }));
+  console.log(refactoredWells)
+  console.log(wellCenters)
+  const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-layouts/${plateId}/wells`, {
+    method: "POST", 
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${token}`,
+    },
+    body: JSON.stringify(refactoredWells),
+  });
+  
+  if (!response.ok) {
+    throw new Error("Wells submission failed");
+  }
+};
+
+
+const uploadAndAnalyzeImage = async (plateId, displayedImage, analysisParams, token) => {
+  const extension = getFileExtension(displayedImage.type);
+  const imageResponse = await fetch(displayedImage);
+  const blob = await imageResponse.blob();
+  const file = new File([blob], `image.${extension}`, {
+    type: displayedImage.type,
+    lastModified: Date.now()
+  });
+  console.log(file)
+  const formData = new FormData();
+  formData.append("plateLayoutId", parseInt(plateId));
+  formData.append("params", JSON.stringify(analysisParams)); 
+  formData.append('image', file);
+
+  const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/analyze`, {
+    method: "POST", 
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  
+  if (!response.ok) {
+    throw new Error("Image analysis failed");
+  }
+};
+
+const handleError = (error) => {
+  console.error("Error:", error);
+  alert(`⚠️ ${error.message || "An error occurred. Try again later."}`);
+};
+
+const showSuccess = (message) => {
+  alert(message);
+};
+
+const handleDescriptionName = async (e, name, description) => {
+  e.preventDefault();
+  const token = localStorage.getItem("token");
+  
+  try {
+    const projectId = await createProject(name, description, token);
+    setProjectId(projectId);
+    showSuccess("Project creation successful!");
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+const handleFinalSubmit = async (updatedWellCenters) => {
+  const token = localStorage.getItem("token");
+  
+  const analysisParams = {
+    columns: columnCount,
+    rows: rowCount,
+    xorigin: coordsOrigin.x,
+    yorigin: coordsOrigin.y,
+    xend: coordsEnd.x,
+    yend: coordsEnd.y,
+    wellDiameter: measuredDistance,
   };
 
-  const handleFinalSubmit = async () => {
-    const token = localStorage.getItem("token");
-    console.log("id", projectId)
-    try {
-      const response = await fetch("https://rgbradford-app.onrender.com/api/plate-layouts", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ 
-          row: rowCount, 
-          column: columnCount, 
-          projectId: projectId, 
-        }),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        const currentPlateId = data.id
-        setPlateId(currentPlateId)
-        alert("R/C and id submit successful!");
-        const refactoredWells = wellCenters.map(obj => ({
-          row: obj.indexRow, 
-          column: obj.indexColumn,
-          type: obj.type,
-          standardConcentration: obj.standardConcentration,
-          replicateGroup: obj.replicateGroup, 
-        }))
-        try {
-          console.log(refactoredWells.length)
-          const response2 = await fetch(`https://rgbradford-app.onrender.com/api/plate-layouts/${currentPlateId}/wells`, {
-            method: "POST", 
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${token}`,
-            },
-            body: JSON.stringify(refactoredWells),
-          })
-          if (response2.ok) {
-            alert("all good chief")
-            const extension = getFileExtension(displayedImage.type);
-            const file = new File([displayedImage], `image.${extension}`, {
-              type: displayedImage.type,
-              lastModified: Date.now()
-            });
-            const formData = new FormData();
-            formData.append('image', file);
-            formData.append("plateLayoutId", parseInt(currentPlateId));
-            formData.append("params", JSON.stringify({
-              columns: columnCount,
-              rows: rowCount,
-              xorigin: coordsOrigin.x,
-              yorigin: coordsOrigin.y,
-              xend: coordsEnd.x,
-              yend: coordsEnd.y,
-              wellDiameter: measuredDistance,
-            })); 
-            try {
-              const response2 = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/analyze`, {
-                method: "POST", 
-                headers: {
-                  "Authorization": `Bearer ${token}`,
-                },
-                body: formData,
-              })
-              if (response2.ok) {
-                alert("all good chief x2")
-              }
-              else {
-                alert("failed 3rd req")
-              }
-            } catch (error) {
-              console.error("Error:", error);
-              alert("⚠️ req 2 error. Try again later.");
-            }
-          }
-          else {
-            alert("failed 2nd req")
-          }
-        } catch (error) {
-          console.error("Error:", error);
-          alert("⚠️ req 2 error. Try again later.");
-        }
-        
-      } else {
-        alert(data.message || "failed");
-      }
-    } catch (error) {
-      console.error("Error:", error);
-      alert("⚠️ req 1 error. Try again later.");
+  try {
+    const plateId = await createPlateLayout(projectId, rowCount, columnCount, token);
+    setPlateId(plateId);
+    
+    await submitWells(plateId, updatedWellCenters, token);
+    await uploadAndAnalyzeImage(plateId, displayedImage, analysisParams, token);
+    
+    showSuccess("All operations completed successfully!");
+
+    handleCalibrationGet(plateId, token)
+    setUploadStage('showCurve')
+
+  } catch (error) {
+    handleError(error);
+  }
+};
+
+  const handleCalibrationGet = async (plateId, token) => {
+    const response = await fetch(`https://rgbradford-app.onrender.com/api/standard-curve/${plateId}`, {
+    method: "GET", 
+    headers: {
+      "Authorization": `Bearer ${token}`,
+    },
+  }); 
+    if (!response.ok) {
+      throw new Error("Image analysis failed");
     }
-  };
-
-
+    const data = await response.json();
+    console.log(data);
+  }
 
 
   const handleUpload = (e) => {
