@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export default function Signup() {
+export default function Signup({setCurrentScreen}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
@@ -21,7 +21,6 @@ export default function Signup() {
 
       if (response.ok) {
         if (data.accessToken) {
-          // if backend returns a token right after signup
           localStorage.setItem("token", data.accessToken);
           setMessage("✅ Account created and logged in!");
         } else {
@@ -38,7 +37,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="flex h-[50vh] items-center justify-center">
+    <div className="flex flex-col gap-4 h-[50vh] items-center justify-center">
       <form
         onSubmit={handleSignup}
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-md"
@@ -71,6 +70,10 @@ export default function Signup() {
           <p className="text-center text-sm text-gray-600">{message}</p>
         )}
       </form>
+        <p className="cursor-pointer !text-white hover:underline" 
+        onClick={() => setCurrentScreen('login')}>
+          Already have an account? Log in!
+        </p>
     </div>
   );
 }

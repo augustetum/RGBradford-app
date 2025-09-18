@@ -1,13 +1,12 @@
 import { useState } from "react";
 
-export default function Login() {
+export default function Login({setCurrentScreen, setIsAuthenticated}) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [message, setMessage] = useState("");
 
   const handleLogin = async (e) => {
     e.preventDefault();
-
     try {
       const response = await fetch("https://rgbradford-app.onrender.com/api/auth/login", {
         method: "POST",
@@ -21,8 +20,9 @@ export default function Login() {
 
       if (response.ok && data.accessToken) {
         localStorage.setItem("token", data.accessToken);
-
         setMessage("✅ Login successful!");
+        setIsAuthenticated(true);
+        setCurrentScreen('catalog');
       } else {
         setMessage(data.message || "❌ Login failed.");
       }
@@ -30,10 +30,11 @@ export default function Login() {
       console.error("Error:", error);
       setMessage("⚠️ Server error. Try again later.");
     }
-  };
+    }
+
 
   return (
-    <div className="flex h-[50vh] items-center justify-center">
+    <div className="flex flex-col gap-4 h-[50vh] items-center justify-center">
       <form
         onSubmit={handleLogin}
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-md"
@@ -66,6 +67,8 @@ export default function Login() {
           <p className="text-center text-sm text-gray-600">{message}</p>
         )}
       </form>
+        <p className="cursor-pointer !text-white hover:underline" onClick={() => setCurrentScreen('signup')}>Don't have an account? Sign up!</p>
+
     </div>
   );
 }

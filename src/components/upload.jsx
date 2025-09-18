@@ -6,8 +6,9 @@ import Calibration from "./calibration.jsx";
 import Crop from "./crop.jsx";
 import Parameters from "./parameters.jsx";
 import tutorial from "../tutorial.jsx";
+import { desc } from "motion/react-client";
 
-function Upload({setCurrentScreen}) {  
+function Upload({setCurrentScreen, showNotification}) {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
   const [coordsOrigin, setCoordsOrigin] = useState(null);
@@ -139,11 +140,11 @@ const uploadAndAnalyzeImage = async (plateId, displayedImage, analysisParams, to
 
 const handleError = (error) => {
   console.error("Error:", error);
-  alert(`⚠️ ${error.message || "An error occurred. Try again later."}`);
+  showNotification(`⚠️ ${error.message || "An error occurred. Try again later."}`);
 };
 
 const showSuccess = (message) => {
-  alert(message);
+  showNotification(message, 'success');
 };
 
 const handleDescriptionName = async (e, name, description) => {
@@ -468,7 +469,12 @@ const handleFinalSubmit = async (updatedWellCenters) => {
     }
     
     const handleInputContainerClick = (e) => {
-      fileInputRef.current.click();
+      if (name && description) {
+        fileInputRef.current.click();
+      }
+      else {
+        showNotification('Name or Description is missing')
+      }
     };
 
   return (
@@ -504,10 +510,16 @@ const handleFinalSubmit = async (updatedWellCenters) => {
           <p>upload plate</p>
         </div>
       </button>
-      <form action="" className="flex gap-10 justify-center mt-4">
-        <span>name<input type="text" className="inpt" onChange={(e) => setName(e.target.value)}/></span>
-        <span>desc<input type="text" className="inpt" onChange={(e) => setDescription(e.target.value)}/></span>
-      </form>
+      <form action="" className="flex flex-col gap-4 items-center mt-4">
+        <div>
+          <label className='text-left' htmlFor="name">Project Name</label>
+          <input type="text" id="name" className="inpt !w-full max-w-100 " onChange={(e) => setName(e.target.value)}/>  
+        </div>
+        <div>
+          <label htmlFor="desc">Project Description</label>
+          <textarea type="s" id="desc" className="inpt !w-full max-w-100 h-20" onChange={(e) => setDescription(e.target.value)}/>
+        </div>
+        </form>
       </>
     )}
 
