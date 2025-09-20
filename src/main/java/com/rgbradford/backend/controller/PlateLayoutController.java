@@ -290,37 +290,48 @@ public class PlateLayoutController {
 
     // POST /api/plate-layouts/{id}/wells - Add wells to plate layout
     @PostMapping("/{id}/wells")
+    @Transactional
     public ResponseEntity<List<WellResponse>> addWellsToPlate(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody List<WellRequest> wellRequests) {
-        
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    List<Well> wells = wellRequests.stream()
-                            .map(request -> {
-                                String position = WellPositionUtils.toPosition(request.getRow(), request.getColumn());
-                                return Well.builder()
-                                    .row(request.getRow())
-                                    .column(request.getColumn())
-                                    .position(position)
-                                    .type(request.getType())
-                                    .standardConcentration(request.getStandardConcentration())
-                                    .sampleName(request.getSampleName())
-                                    .dilutionFactor(request.getDilutionFactor())
-                                    .replicateGroup(request.getReplicateGroup())
-                                    .plateLayout(plateLayout)
-                                    .build();
-                            })
-                            .collect(Collectors.toList());
-                    
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-                    
-                    return ResponseEntity.status(HttpStatus.CREATED).body(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
+
+        if (!plateLayoutRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Build all wells in parallel
+        List<Well> wells = wellRequests.parallelStream()
+                .map(request -> buildWell(request, id))
+                .collect(Collectors.toList());
+
+        // Single batch save
+        List<Well> savedWells = wellRepository.saveAll(wells);
+
+        // Convert to responses in parallel
+        List<WellResponse> responses = savedWells.parallelStream()
+                .map(this::convertToWellResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    private Well buildWell(WellRequest request, Long plateLayoutId) {
+        String position = WellPositionUtils.toPosition(request.getRow(), request.getColumn());
+
+        // Use getReferenceById - creates a proxy without database hit
+        PlateLayout plateLayoutProxy = plateLayoutRepository.getReferenceById(plateLayoutId);
+
+        return Well.builder()
+                .row(request.getRow())
+                .column(request.getColumn())
+                .position(position)
+                .type(request.getType())
+                .standardConcentration(request.getStandardConcentration())
+                .sampleName(request.getSampleName())
+                .dilutionFactor(request.getDilutionFactor())
+                .replicateGroup(request.getReplicateGroup())
+                .plateLayout(plateLayoutProxy) // Use the proxy
+                .build();
     }
 
     // PUT /api/plate-layouts/{id}/wells - Update wells in plate layout using position (A1, B2, etc.)
@@ -395,40 +406,30 @@ public class PlateLayoutController {
     // POST /api/plate-layouts/{id}/group-wells - Group wells into standard, sample, and blank
     @PostMapping("/{id}/group-wells")
     @Deprecated
+    @Transactional
     public ResponseEntity<List<WellResponse>> groupWells(
             @PathVariable Long id,
             @RequestBody WellGroupingRequest request) {
 
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    List<Well> wells = wellRepository.findByPlateLayoutId(id);
-                    Map<Long, Well> wellMap = wells.stream().collect(Collectors.toMap(Well::getId, Function.identity()));
+        if (!plateLayoutRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
 
-                    updateWellTypes(wellMap, request.getStandardWellIds(), WellType.STANDARD);
-                    updateWellTypes(wellMap, request.getSampleWellIds(), WellType.SAMPLE);
-                    updateWellTypes(wellMap, request.getBlankWellIds(), WellType.BLANK);
+        // Single SQL statement updates all wells at once
+        wellRepository.bulkUpdateWellTypes(
+                id,
+                request.getStandardWellIds() != null ? request.getStandardWellIds() : List.of(),
+                request.getSampleWellIds() != null ? request.getSampleWellIds() : List.of(),
+                request.getBlankWellIds() != null ? request.getBlankWellIds() : List.of()
+        );
 
-                    Set<Long> groupedWellIds = Stream.of(
-                            request.getStandardWellIds(),
-                            request.getSampleWellIds(),
-                            request.getBlankWellIds())
-                            .flatMap(List::stream)
-                            .collect(Collectors.toSet());
+        // Single query to get updated results
+        List<Well> wells = wellRepository.findByPlateLayoutId(id);
+        List<WellResponse> responses = wells.stream()
+                .map(this::convertToWellResponse)
+                .collect(Collectors.toList());
 
-                    wells.forEach(well -> {
-                        if (!groupedWellIds.contains(well.getId())) {
-                            well.setType(WellType.EMPTY);
-                        }
-                    });
-
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-
-                    return ResponseEntity.ok(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
+        return ResponseEntity.ok(responses);
     }
     
     /**

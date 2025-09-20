@@ -5,9 +5,13 @@ import com.rgbradford.backend.entity.WellType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface WellRepository extends JpaRepository<Well, Long> {
@@ -46,4 +50,31 @@ public interface WellRepository extends JpaRepository<Well, Long> {
     
     //Delete wells by plate layout ID
     void deleteByPlateLayoutId(Long plateLayoutId);
+
+    /**
+     * Bulk update well types by IDs
+     */
+    @Modifying
+    @Query("UPDATE Well w SET w.type = :wellType WHERE w.id IN :wellIds")
+    void updateWellTypesByIds(@Param("wellIds") List<Long> wellIds, @Param("wellType") WellType wellType);
+
+    /**
+     * Single bulk update using SQL Server CASE statement - most efficient option
+     */
+    @Modifying
+    @Query(value = """
+        UPDATE wells 
+        SET type = CASE 
+            WHEN id IN (:standardIds) THEN 'STANDARD'
+            WHEN id IN (:sampleIds) THEN 'SAMPLE' 
+            WHEN id IN (:blankIds) THEN 'BLANK'
+            ELSE 'EMPTY'
+        END
+        WHERE plate_layout_id = :plateLayoutId
+        """, nativeQuery = true)
+    void bulkUpdateWellTypes(@Param("plateLayoutId") Long plateLayoutId,
+                             @Param("standardIds") List<Long> standardIds,
+                             @Param("sampleIds") List<Long> sampleIds,
+                             @Param("blankIds") List<Long> blankIds);
+
 } 
