@@ -54,7 +54,20 @@ public class StandardCurveController {
             @Parameter(description = "ID of the plate layout containing standard wells", required = true, example = "1")
             @PathVariable Long plateLayoutId) {
         
-        StandardCurveDto curve = standardCurveService.calculateStandardCurve(plateLayoutId);
+        // This will return a cached curve if available, or calculate and store a new one if not
+        StandardCurveDto curve = standardCurveService.getStandardCurve(plateLayoutId);
+        return ResponseEntity.ok(curve);
+    }
+    
+    @PostMapping("/{plateLayoutId}/recalculate")
+    @Operation(summary = "Recalculate standard curve", 
+              description = "Forces recalculation of the standard curve for the specified plate layout")
+    public ResponseEntity<StandardCurveDto> recalculateStandardCurve(
+            @Parameter(description = "ID of the plate layout", required = true, example = "1")
+            @PathVariable Long plateLayoutId) {
+        
+        // This will always recalculate and store a new curve
+        StandardCurveDto curve = standardCurveService.calculateAndStoreStandardCurve(plateLayoutId);
         return ResponseEntity.ok(curve);
     }
 }
