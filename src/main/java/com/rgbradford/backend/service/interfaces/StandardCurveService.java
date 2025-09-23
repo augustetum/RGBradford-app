@@ -1,6 +1,7 @@
 package com.rgbradford.backend.service.interfaces;
 
 import com.rgbradford.backend.dto.StandardCurveDto;
+import java.util.List;
 
 public interface StandardCurveService {
     /**
@@ -25,4 +26,18 @@ public interface StandardCurveService {
      * @return StandardCurveDto if found, or null if not found
      */
     StandardCurveDto getStoredStandardCurve(Long plateLayoutId);
+
+    /**
+     * Retrieves all previously calculated standard curves for a project (by its plate layouts).
+     * @param projectId The ID of the project
+     * @return List of StandardCurveDto for all plate layouts that have a stored curve
+     */
+    List<StandardCurveDto> getStoredStandardCurvesByProject(Long projectId);
+
+    /**
+     * Retrieves a single stored standard curve for a project. Intended for projects with exactly one plate layout.
+     * @param projectId The ID of the project
+     * @return StandardCurveDto if found, or null if not found
+     */
+    StandardCurveDto getStoredStandardCurveByProject(Long projectId);
 }

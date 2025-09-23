@@ -51,11 +51,34 @@ public class StandardCurveServiceImpl implements StandardCurveService {
                 .orElse(null);
     }
     
+    @Override
+    public List<StandardCurveDto> getStoredStandardCurvesByProject(Long projectId) {
+        return calibrationCurveRepository.findByPlateLayoutProjectId(projectId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public StandardCurveDto getStoredStandardCurveByProject(Long projectId) {
+        return calibrationCurveRepository.findByPlateLayoutProjectId(projectId)
+                .stream()
+                .findFirst()
+                .map(this::convertToDto)
+                .orElse(null);
+    }
+    
     private StandardCurveDto convertToDto(CalibrationCurve curve) {
-        // Convert the stored calibration curve to DTO format
-        // Note: This is a simplified conversion. You might need to adjust based on your actual data structure.
+        // Map persisted points
+        List<StandardCurvePointDto> pointDtos = Optional.ofNullable(curve.getPoints())
+                .orElse(Collections.emptyList())
+                .stream()
+                .map(p -> new StandardCurvePointDto(p.getConcentration(), p.getBlueToGreenRatio()))
+                .sorted(Comparator.comparingDouble(StandardCurvePointDto::getConcentration))
+                .collect(Collectors.toList());
+
         return new StandardCurveDto(
-            Collections.emptyList(), // Points are not stored, only the equation
+            pointDtos,
             new RegressionResultDto(
                 curve.getSlope(),
                 curve.getIntercept(),
@@ -144,16 +167,26 @@ public class StandardCurveServiceImpl implements StandardCurveService {
             PlateLayout plateLayout = plateLayoutRepository.findById(plateLayoutId)
                     .orElseThrow(() -> new IllegalArgumentException("Plate layout not found"));
             
-            // Create and save the calibration curve
-            CalibrationCurve curve = CalibrationCurve.builder()
-                    .slope(regression.getSlope())
-                    .intercept(regression.getIntercept())
-                    .rSquared(regression.getRSquared())
-                    .dataPointCount(points.size())
-                    .plateLayout(plateLayout)
-                    .calibrationWells(standardWellsList) // Use the already loaded standard wells
-                    .build();
-            
+            // Upsert calibration curve for this plate layout
+            CalibrationCurve curve = calibrationCurveRepository.findByPlateLayoutId(plateLayoutId)
+                    .orElseGet(() -> CalibrationCurve.builder().plateLayout(plateLayout).build());
+
+            curve.setSlope(regression.getSlope());
+            curve.setIntercept(regression.getIntercept());
+            curve.setRSquared(regression.getRSquared());
+            curve.setDataPointCount(points.size());
+            curve.setCalibrationWells(standardWellsList);
+
+            // Rebuild points and attach (orphanRemoval=true will clean up old ones)
+            List<CalibrationCurvePoint> persistedPoints = points.stream()
+                    .map(p -> CalibrationCurvePoint.builder()
+                            .calibrationCurve(curve)
+                            .concentration(p.getConcentration())
+                            .blueToGreenRatio(p.getBlueToGreenRatio())
+                            .build())
+                    .collect(Collectors.toList());
+            curve.setPoints(persistedPoints);
+
             calibrationCurveRepository.save(curve);
         }
         
