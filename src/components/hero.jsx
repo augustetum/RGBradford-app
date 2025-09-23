@@ -4,8 +4,8 @@ function Hero({name}) {
 
     return(
         <>
-        <header className='text-center pb-4 text-3xl font-semibold'>
-          <h2>Welcome back {name}!</h2>
+        <header className='text-center mt-4 pb-4 text-3xl font-semibold'>
+          <h2>Welcome back!</h2>
           
         </header>
         

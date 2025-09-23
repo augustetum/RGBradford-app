@@ -23,13 +23,42 @@ function App() {
     setCurrentScreen('login');
   }, []);
 
-  const showNotification = (message, type = 'error', duration = 2000) => {
-    setNotification({ message, type, id: Date.now() });
-    setTimeout(() => {
-      setNotification(null);
-    }, duration);
+  const showNotification = (message, type = 'error', duration = 2000, showLoading = false) => {
+    const notificationId = Date.now();
+    setNotification({ 
+      message, 
+      type, 
+      id: notificationId, 
+      loading: showLoading,
+      persistent: showLoading
+    });
+    
+    if (!showLoading && duration > 0) {
+      setTimeout(() => {
+        setNotification(prev => prev?.id === notificationId ? null : prev);
+      }, duration);
+    }
   };
 
+  const showLoading = (message = 'Loading...') => {
+    return showNotification(message, 'loading', 0, true);
+  };
+
+  const hideLoading = (resultMessage = null, resultType = 'success', duration = 2000) => {
+    if (resultMessage) {
+      showNotification(resultMessage, resultType, duration);
+    } else {
+      setNotification(null);
+    }
+  };
+
+  const LoadingSpinner = () => (
+    <div className="animate-spin h-5 w-5 mr-2">
+      <div className="h-full w-full bg-white" style={{
+        clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)'
+      }}></div>
+    </div>
+  );
   const handleLogout = () => {
     localStorage.removeItem('token');
     setIsAuthenticated(false);
@@ -61,27 +90,33 @@ function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -50 }}
             transition={{ duration: 0.3 }}
-            className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg max-w-md  ${
+            className={`fixed top-4 left-1/2 transform -translate-x-1/2 z-50 px-4 py-3 rounded-lg shadow-lg max-w-md ${
               notification.type === 'error' ? 'bg-red-500 text-white' :
               notification.type === 'success' ? 'bg-green-500 text-white' :
               notification.type === 'warning' ? 'bg-yellow-500 text-black' :
+              notification.type === 'loading' ? 'bg-igem-blue text-white' :
               'bg-blue-500 text-white'
             }`}
-            onClick={() => setNotification(null)}
+            onClick={() => !notification.loading && setNotification(null)}
           >
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">{notification.message}</span>
-              <button 
-                onClick={() => setNotification(null)}
-                className="ml-3 text-xl leading-none hover:opacity-70"
-              >
-                ×
-              </button>
+              <div className="flex items-center">
+                {notification.loading && <LoadingSpinner />}
+                <span className="text-sm font-medium">{notification.message}</span>
+              </div>
+              {!notification.loading && (
+                <button 
+                  onClick={() => setNotification(null)}
+                  className="ml-3 text-xl leading-none hover:opacity-70"
+                >
+                  ×
+                </button>
+              )}
             </div>
           </motion.div>
         )}
       </AnimatePresence>
-
+      
       <div className={`mx-auto w-200 mt-10 mb-35 max-w-[min(90vw,50rem)]`}>
       <AnimatePresence mode="wait">
       <motion.div
@@ -103,7 +138,7 @@ function App() {
       )}
       {currentScreen === 'catalog' && isAuthenticated && (<>
       <Hero name={data.name}/>
-      <ProjectList projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
+      <ProjectList setNotification={setNotification} showLoading={showLoading} projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
       </>)}
       {currentScreen === 'project' && isAuthenticated && (
         <Project currentProject={currentProject}/>
