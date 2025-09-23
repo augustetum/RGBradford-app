@@ -11,7 +11,7 @@ import Signup from './components/signup.jsx'
 import Login from './components/login.jsx'
 
 function App() {
-  const [currentProject, setProject] = useState(null)
+  const [currentProject, setProject] = useState(0)
   const [currentScreen, setCurrentScreen] = useState('signup')    
   const [projects, setProjects] = useState([])
   const [isAuthenticated, setIsAuthenticated] = useState(false)
@@ -22,6 +22,7 @@ function App() {
     setIsAuthenticated(false);
     setCurrentScreen('login');
   }, []);
+
 
   const showNotification = (message, type = 'error', duration = 2000, showLoading = false) => {
     const notificationId = Date.now();
@@ -76,8 +77,7 @@ function App() {
 
   const switchScreen = (project, newScreen) => {
     setCurrentScreen(newScreen);
-    if (project === currentProject) {setProject(null)}
-    else {setProject(project)}
+    setProject(project);
   };
 
   return (
@@ -141,7 +141,7 @@ function App() {
       <ProjectList setNotification={setNotification} showLoading={showLoading} projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
       </>)}
       {currentScreen === 'project' && isAuthenticated && (
-        <Project currentProject={currentProject}/>
+        <Project project={projects[currentProject]}/>
       )}
       {currentScreen === 'account' && isAuthenticated && (
         <Account data={data} onLogout={handleLogout}/>
