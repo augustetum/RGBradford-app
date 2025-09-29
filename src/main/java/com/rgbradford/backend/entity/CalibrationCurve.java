@@ -51,7 +51,7 @@ public class CalibrationCurve {
     )
     private List<Well> calibrationWells;
 
-    // Persisted regression points used to build the calibration curve
+    //Persisted regression points used to build the calibration curve
     @OneToMany(mappedBy = "calibrationCurve", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<CalibrationCurvePoint> points;
 }

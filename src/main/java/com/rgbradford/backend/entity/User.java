@@ -30,13 +30,13 @@ public class User {
     @Builder.Default
     private List<Project> projects = new ArrayList<>();
     
-    // Helper method to add project and set the bidirectional relationship
+    //Helper method to add project and set the bidirectional relationship
     public void addProject(Project project) {
         projects.add(project);
         project.setUser(this);
     }
     
-    // Helper method to remove project and clear the bidirectional relationship
+    //Helper method to remove project and clear the bidirectional relationship
     public void removeProject(Project project) {
         projects.remove(project);
         project.setUser(null);

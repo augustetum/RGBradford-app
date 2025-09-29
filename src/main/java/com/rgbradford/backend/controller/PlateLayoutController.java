@@ -366,10 +366,7 @@ public class PlateLayoutController {
     }
 
     
-    /**
-     * Update well information by position
-     * Can be used to set standard concentration, sample name, dilution factor, etc.
-     */
+
     @PutMapping("/{plateLayoutId}/wells/{position}")
     @Operation(summary = "Update well information by position")
     public ResponseEntity<WellResponse> updateWellByPosition(

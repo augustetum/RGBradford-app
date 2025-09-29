@@ -32,7 +32,6 @@ public class PlateAnalysisController {
     @Autowired
     private WellAnalysisRepository wellAnalysisRepository;
 
-    // POST /api/plate-analysis/analyze
     @PostMapping("/analyze")
     public ResponseEntity<String> analyzePlate(
             @RequestParam("plateLayoutId") Long plateLayoutId,
@@ -43,7 +42,24 @@ public class PlateAnalysisController {
         return ResponseEntity.ok("Analysis complete and results saved.");
     }
 
-    // GET /api/plate-analysis/{plateLayoutId}/csv
+    @PostMapping("/{plateLayoutId}/reanalyze")
+    public ResponseEntity<String> reanalyzePlate(
+            @PathVariable Long plateLayoutId,
+            @RequestPart("params") String paramsJson,
+            @RequestPart("image") MultipartFile imageFile) throws Exception {
+
+        //deletes existing results
+        List<WellAnalysis> existingResults = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
+        if (!existingResults.isEmpty()) {
+            wellAnalysisRepository.deleteAll(existingResults);
+        }
+
+        PlateAnalysisParams params = objectMapper.readValue(paramsJson, PlateAnalysisParams.class);
+        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imageFile.getInputStream(), params);
+
+        return ResponseEntity.ok("Reanalysis complete and results updated.");
+    }
+
     @GetMapping("/{plateLayoutId}/csv")
     public ResponseEntity<byte[]> downloadCsv(@PathVariable Long plateLayoutId) {
         // Fetch all WellAnalysis for the given plateLayoutId using the custom query
@@ -57,7 +73,6 @@ public class PlateAnalysisController {
                 .body(csv.getBytes());
     }
 
-    // GET /api/plate-analysis/{plateLayoutId} - Get analysis results
     @GetMapping("/{plateLayoutId}")
     public ResponseEntity<List<WellAnalysisResult>> getAnalysisResults(@PathVariable Long plateLayoutId) {
         List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
@@ -73,7 +88,6 @@ public class PlateAnalysisController {
         return ResponseEntity.ok(responseResults);
     }
 
-    // GET /api/plate-analysis/{plateLayoutId}/summary - Get analysis summary
     @GetMapping("/{plateLayoutId}/summary")
     public ResponseEntity<Map<String, Object>> getAnalysisSummary(@PathVariable Long plateLayoutId) {
         List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
@@ -86,7 +100,6 @@ public class PlateAnalysisController {
         summary.put("totalWells", results.size());
         summary.put("plateLayoutId", plateLayoutId);
 
-        // Calculate statistics
         DoubleSummaryStatistics concentrationStats = results.stream()
                 .filter(wa -> wa.getCalculatedConcentration() != null)
                 .mapToDouble(WellAnalysis::getCalculatedConcentration)
@@ -99,7 +112,7 @@ public class PlateAnalysisController {
                 "count", concentrationStats.getCount()
         ));
 
-        // Count by well type
+        //counts by well type
         Map<String, Long> wellTypeCounts = results.stream()
                 .collect(Collectors.groupingBy(
                         wa -> wa.getWell().getType().toString(),
@@ -110,7 +123,6 @@ public class PlateAnalysisController {
         return ResponseEntity.ok(summary);
     }
 
-    // DELETE /api/plate-analysis/{plateLayoutId} - Delete analysis results
     @DeleteMapping("/{plateLayoutId}")
     public ResponseEntity<Void> deleteAnalysisResults(@PathVariable Long plateLayoutId) {
         List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
@@ -121,26 +133,6 @@ public class PlateAnalysisController {
 
         wellAnalysisRepository.deleteAll(results);
         return ResponseEntity.noContent().build();
-    }
-
-    // POST /api/plate-analysis/{plateLayoutId}/reanalyze - Reanalyze with new params
-    @PostMapping("/{plateLayoutId}/reanalyze")
-    public ResponseEntity<String> reanalyzePlate(
-            @PathVariable Long plateLayoutId,
-            @RequestPart("params") String paramsJson,
-            @RequestPart("image") MultipartFile imageFile) throws Exception {
-
-        // Delete existing results first
-        List<WellAnalysis> existingResults = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
-        if (!existingResults.isEmpty()) {
-            wellAnalysisRepository.deleteAll(existingResults);
-        }
-
-        // Perform new analysis
-        PlateAnalysisParams params = objectMapper.readValue(paramsJson, PlateAnalysisParams.class);
-        plateAnalysisService.analyzeAndPersistPlate(plateLayoutId, imageFile.getInputStream(), params);
-
-        return ResponseEntity.ok("Reanalysis complete and results updated.");
     }
 
     private WellAnalysisResult convertToWellAnalysisResult(WellAnalysis wellAnalysis) {

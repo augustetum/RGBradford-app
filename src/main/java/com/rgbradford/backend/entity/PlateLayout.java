@@ -33,12 +33,12 @@ public class PlateLayout {
     @OneToOne(mappedBy = "plateLayout", cascade = CascadeType.ALL, orphanRemoval = true)
     private CalibrationCurve calibrationCurve;
 
-    // One project per plate layout
+    //One project per plate layout
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "project_id", nullable = false)
     private Project project;
     
-    // Helper method to set the project and maintain the bidirectional relationship
+    //Helper method to set the project and maintain the bidirectional relationship
     public void setProject(Project project) {
         if (this.project != null) {
             this.project.setPlateLayoutInternal(null);
@@ -49,7 +49,7 @@ public class PlateLayout {
         this.project = project;
     }
     
-    // Internal method to set the project without causing an infinite loop
+    //Internal method to set the project without causing an infinite loop
     void setProjectInternal(Project project) {
         this.project = project;
     }

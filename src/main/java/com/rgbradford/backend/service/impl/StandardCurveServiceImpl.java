@@ -73,8 +73,9 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         List<StandardCurvePointDto> pointDtos = Optional.ofNullable(curve.getPoints())
                 .orElse(Collections.emptyList())
                 .stream()
+                // Keep field names: concentration (y), blueToGreenRatio (x)
                 .map(p -> new StandardCurvePointDto(p.getConcentration(), p.getBlueToGreenRatio()))
-                .sorted(Comparator.comparingDouble(StandardCurvePointDto::getConcentration))
+                .sorted(Comparator.comparingDouble(StandardCurvePointDto::getBlueToGreenRatio))
                 .collect(Collectors.toList());
 
         return new StandardCurveDto(
@@ -124,19 +125,20 @@ public class StandardCurveServiceImpl implements StandardCurveService {
                             .mapToDouble(WellAnalysis::getBlueToGreenRatio)
                             .average()
                             .orElse(Double.NaN);
-                    
+
                     if (!Double.isNaN(avgRatio)) {
+                        // Keep DTO fields: concentration (y), blueToGreenRatio (x)
                         points.add(new StandardCurvePointDto(
-                                standardConcentration,  // x: BSA concentration (mg/mL)
-                                avgRatio               // y: Average blue-to-green ratio
+                                standardConcentration, // concentration (y)
+                                avgRatio               // blueToGreenRatio (x)
                         ));
                     }
                 }
             }
         }
         
-        // Sort points by concentration (ascending)
-        points.sort(Comparator.comparingDouble(StandardCurvePointDto::getConcentration));
+        // Sort points by x (blueToGreenRatio) ascending
+        points.sort(Comparator.comparingDouble(StandardCurvePointDto::getBlueToGreenRatio));
         
         // Calculate linear regression if we have enough points
         RegressionResultDto regression = null;
@@ -144,7 +146,8 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         if (points.size() >= 2) {
             // Prepare data for curve fitting
             WeightedObservedPoints obs = new WeightedObservedPoints();
-            points.forEach(point -> obs.add(point.getConcentration(), point.getBlueToGreenRatio()));
+            // Regression will model y = m*x + b where x = blueToGreenRatio, y = concentration
+            points.forEach(point -> obs.add(point.getBlueToGreenRatio(), point.getConcentration()));
             
             // Fit a first degree polynomial (linear regression)
             double[] coefficients = PolynomialCurveFitter.create(1).fit(obs.toList());
@@ -154,7 +157,7 @@ public class StandardCurveServiceImpl implements StandardCurveService {
             
             // Create regression result
             regression = new RegressionResultDto(
-                coefficients[1], // slope
+                coefficients[1], // slope (dy/dx)
                 coefficients[0], // intercept
                 rSquared
             );
@@ -178,6 +181,7 @@ public class StandardCurveServiceImpl implements StandardCurveService {
             curve.setCalibrationWells(standardWellsList);
 
             // Rebuild points and attach (orphanRemoval=true will clean up old ones)
+            // Persist with entity fields unchanged: concentration & blueToGreenRatio
             List<CalibrationCurvePoint> persistedPoints = points.stream()
                     .map(p -> CalibrationCurvePoint.builder()
                             .calibrationCurve(curve)
@@ -201,7 +205,7 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         
         // Calculate mean of y values
         double yMean = points.stream()
-                .mapToDouble(StandardCurvePointDto::getBlueToGreenRatio)
+                .mapToDouble(StandardCurvePointDto::getConcentration)
                 .average()
                 .orElse(0);
         
@@ -209,8 +213,8 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         double ssRes = 0;  // Residual sum of squares
         
         for (StandardCurvePointDto point : points) {
-            double y = point.getBlueToGreenRatio();
-            double yPred = a * point.getConcentration() + b;
+            double y = point.getConcentration();
+            double yPred = a * point.getBlueToGreenRatio() + b;
             
             ssTot += Math.pow(y - yMean, 2);
             ssRes += Math.pow(y - yPred, 2);

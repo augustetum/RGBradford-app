@@ -14,16 +14,16 @@ import lombok.NoArgsConstructor;
 @Schema(description = "A single data point on the standard curve")
 public class StandardCurvePointDto {
     @Schema(
-        description = "BSA concentration in mg/mL (x-axis)",
+        description = "BSA concentration in mg/mL (y-axis)",
         example = "1.5",
         required = true
     )
-    private double concentration;
+    private double concentration; // y
     
     @Schema(
-        description = "Average blue-to-green ratio for this concentration (y-axis)",
+        description = "Average blue-to-green ratio (x-axis)",
         example = "0.75",
         required = true
     )
-    private double blueToGreenRatio;
+    private double blueToGreenRatio; // x
 }

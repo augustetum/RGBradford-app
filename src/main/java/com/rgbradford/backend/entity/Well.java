@@ -24,7 +24,7 @@ public class Well {
     @Column(nullable = false)
     private int column;
     
-    // Human-readable position (e.g., "A1", "B2")
+    //Human-readable position (e.g., "A1", "B2")
     @Column(name = "position", length = 5, nullable = false)
     private String position;
 
@@ -40,7 +40,7 @@ public class Well {
     private String sampleName;
     private Double dilutionFactor;
 
-    //Groups of replicates (optional)
+    //Groups of replicates for standard wells
     private String replicateGroup;
 
     //Reference to the plate layout that this well belongs to
@@ -48,7 +48,6 @@ public class Well {
     @JoinColumn(name = "plate_layout_id", nullable = false)
     private PlateLayout plateLayout;
 
-  // Remove the @JoinColumn - use mappedBy instead
 @OneToOne(mappedBy = "well", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
 private WellAnalysis wellAnalysis;
 } 
