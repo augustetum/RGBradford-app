@@ -3,9 +3,9 @@ package com.rgbradford.backend.service.impl;
 import com.rgbradford.backend.dto.RegressionResultDto;
 import com.rgbradford.backend.dto.StandardCurveDto;
 import com.rgbradford.backend.dto.StandardCurvePointDto;
-import com.rgbradford.backend.entity.Well;
-import com.rgbradford.backend.entity.WellAnalysis;
-import com.rgbradford.backend.entity.WellType;
+import com.rgbradford.backend.entity.*;
+import com.rgbradford.backend.repository.CalibrationCurveRepository;
+import com.rgbradford.backend.repository.PlateLayoutRepository;
 import com.rgbradford.backend.repository.WellRepository;
 import com.rgbradford.backend.service.interfaces.StandardCurveService;
 import org.apache.commons.math3.fitting.PolynomialCurveFitter;
@@ -17,26 +17,89 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class StandardCurveServiceImpl implements StandardCurveService {
 
     private final WellRepository wellRepository;
+    private final CalibrationCurveRepository calibrationCurveRepository;
+    private final PlateLayoutRepository plateLayoutRepository;
 
-    public StandardCurveServiceImpl(WellRepository wellRepository) {
+    public StandardCurveServiceImpl(WellRepository wellRepository,
+                                  CalibrationCurveRepository calibrationCurveRepository,
+                                  PlateLayoutRepository plateLayoutRepository) {
         this.wellRepository = wellRepository;
+        this.calibrationCurveRepository = calibrationCurveRepository;
+        this.plateLayoutRepository = plateLayoutRepository;
+    }
+    
+    @Override
+    public StandardCurveDto getStandardCurve(Long plateLayoutId) {
+        // First try to get from database
+        StandardCurveDto storedCurve = getStoredStandardCurve(plateLayoutId);
+        if (storedCurve != null) {
+            return storedCurve;
+        }
+        
+        // If not found, calculate and store a new one
+        return calculateAndStoreStandardCurve(plateLayoutId);
+    }
+    
+    @Override
+    public StandardCurveDto getStoredStandardCurve(Long plateLayoutId) {
+        return calibrationCurveRepository.findByPlateLayoutId(plateLayoutId)
+                .map(this::convertToDto)
+                .orElse(null);
+    }
+    
+    @Override
+    public List<StandardCurveDto> getStoredStandardCurvesByProject(Long projectId) {
+        return calibrationCurveRepository.findByPlateLayoutProjectId(projectId)
+                .stream()
+                .map(this::convertToDto)
+                .collect(Collectors.toList());
+    }
+    
+    @Override
+    public StandardCurveDto getStoredStandardCurveByProject(Long projectId) {
+        return calibrationCurveRepository.findByPlateLayoutProjectId(projectId)
+                .stream()
+                .findFirst()
+                .map(this::convertToDto)
+                .orElse(null);
+    }
+    
+    private StandardCurveDto convertToDto(CalibrationCurve curve) {
+        // Map persisted points
+        List<StandardCurvePointDto> pointDtos = Optional.ofNullable(curve.getPoints())
+                .orElse(Collections.emptyList())
+                .stream()
+                // Keep field names: concentration (y), blueToGreenRatio (x)
+                .map(p -> new StandardCurvePointDto(p.getConcentration(), p.getBlueToGreenRatio()))
+                .sorted(Comparator.comparingDouble(StandardCurvePointDto::getBlueToGreenRatio))
+                .collect(Collectors.toList());
+
+        return new StandardCurveDto(
+            pointDtos,
+            new RegressionResultDto(
+                curve.getSlope(),
+                curve.getIntercept(),
+                curve.getRSquared()
+            )
+        );
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public StandardCurveDto calculateStandardCurve(Long plateLayoutId) {
+    @Transactional
+    public StandardCurveDto calculateAndStoreStandardCurve(Long plateLayoutId) {
         // Get all standard wells for this plate layout with their analyses
-        List<Well> standardWells = wellRepository.findByPlateLayoutIdAndType(plateLayoutId, WellType.STANDARD);
+        List<Well> standardWellsList = wellRepository.findByPlateLayoutIdAndType(plateLayoutId, WellType.STANDARD);
         
-        if (standardWells.isEmpty()) {
+        if (standardWellsList.isEmpty()) {
             throw new IllegalArgumentException("No standard wells found for the specified plate layout");
         }
 
         // Group standard wells by concentration
-        Map<Double, List<Well>> wellsByConcentration = standardWells.stream()
+        Map<Double, List<Well>> wellsByConcentration = standardWellsList.stream()
                 .filter(well -> well.getStandardConcentration() != null)
                 .collect(Collectors.groupingBy(Well::getStandardConcentration));
 
@@ -62,19 +125,20 @@ public class StandardCurveServiceImpl implements StandardCurveService {
                             .mapToDouble(WellAnalysis::getBlueToGreenRatio)
                             .average()
                             .orElse(Double.NaN);
-                    
+
                     if (!Double.isNaN(avgRatio)) {
+                        // Keep DTO fields: concentration (y), blueToGreenRatio (x)
                         points.add(new StandardCurvePointDto(
-                                standardConcentration,  // x: BSA concentration (mg/mL)
-                                avgRatio               // y: Average blue-to-green ratio
+                                standardConcentration, // concentration (y)
+                                avgRatio               // blueToGreenRatio (x)
                         ));
                     }
                 }
             }
         }
         
-        // Sort points by concentration (ascending)
-        points.sort(Comparator.comparingDouble(StandardCurvePointDto::getConcentration));
+        // Sort points by x (blueToGreenRatio) ascending
+        points.sort(Comparator.comparingDouble(StandardCurvePointDto::getBlueToGreenRatio));
         
         // Calculate linear regression if we have enough points
         RegressionResultDto regression = null;
@@ -82,7 +146,8 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         if (points.size() >= 2) {
             // Prepare data for curve fitting
             WeightedObservedPoints obs = new WeightedObservedPoints();
-            points.forEach(point -> obs.add(point.getConcentration(), point.getBlueToGreenRatio()));
+            // Regression will model y = m*x + b where x = blueToGreenRatio, y = concentration
+            points.forEach(point -> obs.add(point.getBlueToGreenRatio(), point.getConcentration()));
             
             // Fit a first degree polynomial (linear regression)
             double[] coefficients = PolynomialCurveFitter.create(1).fit(obs.toList());
@@ -92,13 +157,44 @@ public class StandardCurveServiceImpl implements StandardCurveService {
             
             // Create regression result
             regression = new RegressionResultDto(
-                coefficients[1], // slope
+                coefficients[1], // slope (dy/dx)
                 coefficients[0], // intercept
                 rSquared
             );
         }
         
-        return new StandardCurveDto(points, regression);
+        StandardCurveDto result = new StandardCurveDto(points, regression);
+        
+        // Store the calibration curve in the database
+        if (regression != null) {
+            PlateLayout plateLayout = plateLayoutRepository.findById(plateLayoutId)
+                    .orElseThrow(() -> new IllegalArgumentException("Plate layout not found"));
+            
+            // Upsert calibration curve for this plate layout
+            CalibrationCurve curve = calibrationCurveRepository.findByPlateLayoutId(plateLayoutId)
+                    .orElseGet(() -> CalibrationCurve.builder().plateLayout(plateLayout).build());
+
+            curve.setSlope(regression.getSlope());
+            curve.setIntercept(regression.getIntercept());
+            curve.setRSquared(regression.getRSquared());
+            curve.setDataPointCount(points.size());
+            curve.setCalibrationWells(standardWellsList);
+
+            // Rebuild points and attach (orphanRemoval=true will clean up old ones)
+            // Persist with entity fields unchanged: concentration & blueToGreenRatio
+            List<CalibrationCurvePoint> persistedPoints = points.stream()
+                    .map(p -> CalibrationCurvePoint.builder()
+                            .calibrationCurve(curve)
+                            .concentration(p.getConcentration())
+                            .blueToGreenRatio(p.getBlueToGreenRatio())
+                            .build())
+                    .collect(Collectors.toList());
+            curve.setPoints(persistedPoints);
+
+            calibrationCurveRepository.save(curve);
+        }
+        
+        return result;
     }
     
     private Double calculateRSquared(List<StandardCurvePointDto> points, double[] coefficients) {
@@ -109,7 +205,7 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         
         // Calculate mean of y values
         double yMean = points.stream()
-                .mapToDouble(StandardCurvePointDto::getBlueToGreenRatio)
+                .mapToDouble(StandardCurvePointDto::getConcentration)
                 .average()
                 .orElse(0);
         
@@ -117,8 +213,8 @@ public class StandardCurveServiceImpl implements StandardCurveService {
         double ssRes = 0;  // Residual sum of squares
         
         for (StandardCurvePointDto point : points) {
-            double y = point.getBlueToGreenRatio();
-            double yPred = a * point.getConcentration() + b;
+            double y = point.getConcentration();
+            double yPred = a * point.getBlueToGreenRatio() + b;
             
             ssTot += Math.pow(y - yMean, 2);
             ssRes += Math.pow(y - yPred, 2);

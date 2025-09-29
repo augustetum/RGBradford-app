@@ -17,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
-import java.util.List;
 
 @RestController
 @RequestMapping("/api/projects")
@@ -49,13 +48,14 @@ public class ProjectController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProjectResponse>> getAllProjects(
+    public ResponseEntity<Page<ProjectResponse>> getAllProjects(
             Pageable pageable,
             @AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails.getUsername();
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
-        return ResponseEntity.ok(projectService.getAllProjects(pageable, user.getId()).getContent());
+        Page<ProjectResponse> page = projectService.getAllProjects(pageable, user.getId());
+        return ResponseEntity.ok(page);
     }
 
     @PutMapping("/{id}")

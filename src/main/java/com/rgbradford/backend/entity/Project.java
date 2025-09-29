@@ -27,7 +27,7 @@ public class Project {
     @Column(name = "picture_file_path")
     private String pictureFilePath;
 
-    //The user who owns this project
+    //Reference to the user who owns the project
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
@@ -36,11 +36,11 @@ public class Project {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
-    //One project has one plate layout (or plate)
+    //One project has one plate
     @OneToOne(mappedBy = "project", cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, orphanRemoval = true, fetch = FetchType.LAZY)
     private PlateLayout plateLayout;
     
-    // Helper method to set the plate layout and maintain the bidirectional relationship
+    //Helper method to set the plate layout and maintain the bidirectional relationship
     public void setPlateLayout(PlateLayout plateLayout) {
         if (plateLayout == null) {
             if (this.plateLayout != null) {
@@ -54,7 +54,7 @@ public class Project {
         this.plateLayout = plateLayout;
     }
     
-    // Internal method to set the project without causing an infinite loop
+    //Internal method to set the project without causing an infinite loop
     void setPlateLayoutInternal(PlateLayout plateLayout) {
         this.plateLayout = plateLayout;
     }

@@ -209,44 +209,6 @@ public class PlateLayoutController {
         }
     }
 
-    @PostMapping("/{id}/init-wells")
-    @Transactional
-    public ResponseEntity<List<WellResponse>> initializeWells(@PathVariable Long id) {
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    // Delete any existing wells first
-                    wellRepository.deleteByPlateLayoutId(id);
-                    
-                    List<Well> wells = new ArrayList<>();
-                    
-                    // Create wells for each position in the plate
-                    for (int row = 0; row < plateLayout.getRows(); row++) {
-                        for (int col = 0; col < plateLayout.getColumns(); col++) {
-                            String position = WellPositionUtils.toPosition(row, col);
-                            Well well = Well.builder()
-                                    .row(row)
-                                    .column(col)
-                                    .position(position)
-                                    .type(WellType.EMPTY)
-                                    .plateLayout(plateLayout)
-                                    .build();
-                            wells.add(well);
-                        }
-                    }
-                
-                // Save all wells
-                List<Well> savedWells = wellRepository.saveAll(wells);
-                
-                // Convert to response
-                List<WellResponse> responses = savedWells.stream()
-                        .map(this::convertToWellResponse)
-                        .collect(Collectors.toList());
-                
-                return ResponseEntity.ok(responses);
-            })
-            .orElse(ResponseEntity.notFound().build());
-}
-
     // PUT /api/plate-layouts/{id} - Update plate layout
     @PutMapping("/{id}")
     public ResponseEntity<PlateLayoutResponse> updatePlateLayout(
@@ -290,37 +252,48 @@ public class PlateLayoutController {
 
     // POST /api/plate-layouts/{id}/wells - Add wells to plate layout
     @PostMapping("/{id}/wells")
+    @Transactional
     public ResponseEntity<List<WellResponse>> addWellsToPlate(
-            @PathVariable Long id, 
+            @PathVariable Long id,
             @RequestBody List<WellRequest> wellRequests) {
-        
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    List<Well> wells = wellRequests.stream()
-                            .map(request -> {
-                                String position = WellPositionUtils.toPosition(request.getRow(), request.getColumn());
-                                return Well.builder()
-                                    .row(request.getRow())
-                                    .column(request.getColumn())
-                                    .position(position)
-                                    .type(request.getType())
-                                    .standardConcentration(request.getStandardConcentration())
-                                    .sampleName(request.getSampleName())
-                                    .dilutionFactor(request.getDilutionFactor())
-                                    .replicateGroup(request.getReplicateGroup())
-                                    .plateLayout(plateLayout)
-                                    .build();
-                            })
-                            .collect(Collectors.toList());
-                    
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-                    
-                    return ResponseEntity.status(HttpStatus.CREATED).body(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
+
+        if (!plateLayoutRepository.existsById(id)) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Build all wells in parallel
+        List<Well> wells = wellRequests.parallelStream()
+                .map(request -> buildWell(request, id))
+                .collect(Collectors.toList());
+
+        // Single batch save
+        List<Well> savedWells = wellRepository.saveAll(wells);
+
+        // Convert to responses in parallel
+        List<WellResponse> responses = savedWells.parallelStream()
+                .map(this::convertToWellResponse)
+                .collect(Collectors.toList());
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(responses);
+    }
+
+    private Well buildWell(WellRequest request, Long plateLayoutId) {
+        String position = WellPositionUtils.toPosition(request.getRow(), request.getColumn());
+
+        // Use getReferenceById - creates a proxy without database hit
+        PlateLayout plateLayoutProxy = plateLayoutRepository.getReferenceById(plateLayoutId);
+
+        return Well.builder()
+                .row(request.getRow())
+                .column(request.getColumn())
+                .position(position)
+                .type(request.getType())
+                .standardConcentration(request.getStandardConcentration())
+                .sampleName(request.getSampleName())
+                .dilutionFactor(request.getDilutionFactor())
+                .replicateGroup(request.getReplicateGroup())
+                .plateLayout(plateLayoutProxy) // Use the proxy
+                .build();
     }
 
     // PUT /api/plate-layouts/{id}/wells - Update wells in plate layout using position (A1, B2, etc.)
@@ -392,126 +365,8 @@ public class PlateLayoutController {
                 .orElse(ResponseEntity.notFound().build());
     }
 
-    // POST /api/plate-layouts/{id}/group-wells - Group wells into standard, sample, and blank
-    @PostMapping("/{id}/group-wells")
-    @Deprecated
-    public ResponseEntity<List<WellResponse>> groupWells(
-            @PathVariable Long id,
-            @RequestBody WellGroupingRequest request) {
-
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    List<Well> wells = wellRepository.findByPlateLayoutId(id);
-                    Map<Long, Well> wellMap = wells.stream().collect(Collectors.toMap(Well::getId, Function.identity()));
-
-                    updateWellTypes(wellMap, request.getStandardWellIds(), WellType.STANDARD);
-                    updateWellTypes(wellMap, request.getSampleWellIds(), WellType.SAMPLE);
-                    updateWellTypes(wellMap, request.getBlankWellIds(), WellType.BLANK);
-
-                    Set<Long> groupedWellIds = Stream.of(
-                            request.getStandardWellIds(),
-                            request.getSampleWellIds(),
-                            request.getBlankWellIds())
-                            .flatMap(List::stream)
-                            .collect(Collectors.toSet());
-
-                    wells.forEach(well -> {
-                        if (!groupedWellIds.contains(well.getId())) {
-                            well.setType(WellType.EMPTY);
-                        }
-                    });
-
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-
-                    return ResponseEntity.ok(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
     
-    /**
-     * Group wells by their position (e.g., "A1", "B2") instead of well IDs
-     */
-    @PostMapping("/{id}/group-wells-by-position")
-    @Operation(summary = "Group wells by position into standard, sample, and blank wells")
-    public ResponseEntity<List<WellResponse>> groupWellsByPosition(
-            @Parameter(description = "ID of the plate layout") @PathVariable Long id,
-            @RequestBody WellPositionGroupingRequest request) {
-            
-        return plateLayoutRepository.findById(id)
-                .map(plateLayout -> {
-                    // Get all wells for this plate
-                    List<Well> wells = wellRepository.findByPlateLayoutId(id);
-                    
-                    // Create a map of position to well for quick lookup
-                    Map<String, Well> positionToWellMap = wells.stream()
-                            .collect(Collectors.toMap(
-                                    well -> WellPositionUtils.toPosition(well.getRow(), well.getColumn()),
-                                    Function.identity()
-                            ));
-                    
-                    // Update well types based on position
-                    updateWellTypesByPosition(positionToWellMap, request.getStandardWellPositions(), WellType.STANDARD);
-                    updateWellTypesByPosition(positionToWellMap, request.getSampleWellPositions(), WellType.SAMPLE);
-                    updateWellTypesByPosition(positionToWellMap, request.getBlankWellPositions(), WellType.BLANK);
-                    
-                    // Mark all other wells as EMPTY
-                    Set<String> groupedPositions = new HashSet<>();
-                    
-                    // Helper method to add positions to the set
-                    Consumer<List<String>> addPositions = (List<String> positions) -> {
-                        if (positions != null) {
-                            positions.stream()
-                                .map(String::toUpperCase)
-                                .forEach(groupedPositions::add);
-                        }
-                    };
-                    
-                    // Add all positions from each list
-                    addPositions.accept(request.getStandardWellPositions());
-                    addPositions.accept(request.getSampleWellPositions());
-                    addPositions.accept(request.getBlankWellPositions());
-                            
-                    positionToWellMap.forEach((position, well) -> {
-                        if (!groupedPositions.contains(position)) {
-                            well.setType(WellType.EMPTY);
-                        }
-                    });
-                    
-                    // Save all changes
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    
-                    // Convert to response
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-                            
-                    return ResponseEntity.ok(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-    
-    private void updateWellTypesByPosition(Map<String, Well> positionToWellMap, List<String> positions, WellType wellType) {
-        if (positions != null) {
-            positions.stream()
-                    .map(String::toUpperCase) // Ensure case-insensitive matching
-                    .forEach(position -> {
-                        if (positionToWellMap.containsKey(position)) {
-                            positionToWellMap.get(position).setType(wellType);
-                        } else {
-                            // Log a warning if position doesn't exist
-                            System.out.println("Warning: Position " + position + " not found in plate layout");
-                        }
-                    });
-        }
-    }
-    
-    /**
-     * Update well information by position
-     * Can be used to set standard concentration, sample name, dilution factor, etc.
-     */
+
     @PutMapping("/{plateLayoutId}/wells/{position}")
     @Operation(summary = "Update well information by position")
     public ResponseEntity<WellResponse> updateWellByPosition(
@@ -554,79 +409,6 @@ public class PlateLayoutController {
                     return ResponseEntity.ok(convertToWellResponse(savedWell));
                 })
                 .orElse(ResponseEntity.notFound().build());
-    }
-    
-    /**
-     * Bulk update multiple wells at once
-     */
-    @PutMapping("/{plateLayoutId}/wells/bulk")
-    @Operation(summary = "Bulk update multiple wells at once")
-    public ResponseEntity<List<WellResponse>> updateWellsBulk(
-            @Parameter(description = "ID of the plate layout") @PathVariable Long plateLayoutId,
-            @Valid @RequestBody List<WellUpdateRequest> requests) {
-        
-        return plateLayoutRepository.findById(plateLayoutId)
-                .map(plateLayout -> {
-                    // Get all wells for this plate
-                    List<Well> wells = wellRepository.findByPlateLayoutId(plateLayoutId);
-                    
-                    // Create a map of position to well for quick lookup
-                    Map<String, Well> positionToWellMap = wells.stream()
-                            .collect(Collectors.toMap(
-                                    well -> WellPositionUtils.toPosition(well.getRow(), well.getColumn()),
-                                    Function.identity()
-                            ));
-                    
-                    // Process each update request
-                    requests.forEach(request -> {
-                        String position = request.getPosition().toUpperCase();
-                        if (positionToWellMap.containsKey(position)) {
-                            Well well = positionToWellMap.get(position);
-                            
-                            // Update well properties if they are provided in the request
-                            if (request.getType() != null) {
-                                well.setType(request.getType());
-                            }
-                            
-                            if (request.getStandardConcentration() != null) {
-                                well.setStandardConcentration(request.getStandardConcentration());
-                            }
-                            
-                            if (request.getSampleName() != null) {
-                                well.setSampleName(request.getSampleName());
-                            }
-                            
-                            if (request.getDilutionFactor() != null) {
-                                well.setDilutionFactor(request.getDilutionFactor());
-                            }
-                            
-                            if (request.getReplicateGroup() != null) {
-                                well.setReplicateGroup(request.getReplicateGroup());
-                            }
-                        }
-                    });
-                    
-                    // Save all updated wells
-                    List<Well> savedWells = wellRepository.saveAll(wells);
-                    
-                    // Convert to response
-                    List<WellResponse> responses = savedWells.stream()
-                            .map(this::convertToWellResponse)
-                            .collect(Collectors.toList());
-                            
-                    return ResponseEntity.ok(responses);
-                })
-                .orElse(ResponseEntity.notFound().build());
-    }
-
-    private void updateWellTypes(Map<Long, Well> wellMap, List<Long> wellIds, WellType wellType) {
-        if (wellIds != null) {
-            wellIds.forEach(wellId -> {
-                if (wellMap.containsKey(wellId)) {
-                    wellMap.get(wellId).setType(wellType);
-                }
-            });
-        }
     }
 
     private PlateLayoutResponse convertToResponse(PlateLayout plateLayout) {
