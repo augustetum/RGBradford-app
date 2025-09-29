@@ -86,7 +86,8 @@ public class PlateAnalysisController {
 
  @GetMapping(value = "/{plateLayoutId}/xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) throws Exception {
-    // Gather calibration curve data only
+    // Gather data: calibration points and all well analyses
+    List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
     StandardCurveDto curve = standardCurveService.getStandardCurve(plateLayoutId);
 
     try (XSSFWorkbook workbook = new XSSFWorkbook()) {
@@ -99,7 +100,7 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
         CellStyle numberStyle = workbook.createCellStyle();
         numberStyle.setDataFormat(workbook.createDataFormat().getFormat("0.0000"));
 
-        // Single sheet: Calibration Points only
+        // Sheet 1: Calibration Points
         XSSFSheet sheet = workbook.createSheet("Calibration Points");
 
         // Headers
@@ -128,6 +129,57 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
         // Autosize columns
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
+
+        // Sheet 2: Well Analysis (with Dilution Factor columns)
+        XSSFSheet wellSheet = workbook.createSheet("Well Analysis");
+        String[] wellHeaders = {
+                "Row", "Column", "Green", "Blue", "Blue/Green Ratio",
+                "Calculated Concentration", "Dilution Factor", "Adjusted Concentration"
+        };
+        Row wellHeaderRow = wellSheet.createRow(0);
+        for (int i = 0; i < wellHeaders.length; i++) {
+            Cell hc = wellHeaderRow.createCell(i);
+            hc.setCellValue(wellHeaders[i]);
+            hc.setCellStyle(headerStyle);
+        }
+
+        int wr = 1;
+        for (WellAnalysis wa : results) {
+            Row row = wellSheet.createRow(wr);
+            row.createCell(0).setCellValue(wa.getWell().getRow());
+            row.createCell(1).setCellValue(wa.getWell().getColumn());
+
+            Cell cGreen = row.createCell(2);
+            cGreen.setCellValue(wa.getGreenValue() != null ? wa.getGreenValue() : 0);
+
+            Cell cBlue = row.createCell(3);
+            cBlue.setCellValue(wa.getBlueValue() != null ? wa.getBlueValue() : 0);
+
+            Cell cRatio = row.createCell(4);
+            cRatio.setCellValue(wa.getBlueToGreenRatio() != null ? wa.getBlueToGreenRatio() : 0.0);
+            cRatio.setCellStyle(numberStyle);
+
+            Cell cCalc = row.createCell(5);
+            cCalc.setCellValue(wa.getCalculatedConcentration() != null ? wa.getCalculatedConcentration() : 0.0);
+            cCalc.setCellStyle(numberStyle);
+
+            // Column 6 (index 6): Dilution Factor - left blank for user input
+            row.createCell(6); // intentionally blank
+
+            // Column 7 (index 7): Adjusted Concentration = Calculated * DilutionFactor (if provided)
+            Cell cAdj = row.createCell(7);
+            // Excel rows are 1-based; header is row 1, first data row is 2
+            int excelRow = wr + 1;
+            String formula = String.format("IFERROR(F%d*G%d, \"\")", excelRow, excelRow);
+            cAdj.setCellFormula(formula);
+            cAdj.setCellStyle(numberStyle);
+
+            wr++;
+        }
+
+        for (int i = 0; i < wellHeaders.length; i++) {
+            wellSheet.autoSizeColumn(i);
+        }
 
         // Write workbook to bytes
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
