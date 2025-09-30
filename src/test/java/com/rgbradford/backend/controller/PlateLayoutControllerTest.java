@@ -1,7 +1,6 @@
 package com.rgbradford.backend.controller;
 
 import com.rgbradford.backend.dto.request.CreatePlateLayoutRequest;
-import com.rgbradford.backend.entity.PlateLayout;
 import com.rgbradford.backend.entity.Project;
 import com.rgbradford.backend.entity.User;
 import com.rgbradford.backend.repository.PlateLayoutRepository;
@@ -19,7 +18,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
 
 @SpringBootTest
 @AutoConfigureMockMvc

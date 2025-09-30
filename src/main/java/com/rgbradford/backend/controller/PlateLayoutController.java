@@ -4,15 +4,12 @@ import com.rgbradford.backend.dto.request.CreatePlateLayoutRequest;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import com.rgbradford.backend.dto.request.UpdatePlateLayoutRequest;
 import com.rgbradford.backend.dto.request.WellRequest;
-import com.rgbradford.backend.dto.request.WellPositionGroupingRequest;
 import com.rgbradford.backend.dto.request.WellUpdateRequest;
 import com.rgbradford.backend.dto.response.PlateLayoutResponse;
 import com.rgbradford.backend.dto.response.WellResponse;
-import com.rgbradford.backend.dto.WellGroupingRequest;
 import com.rgbradford.backend.entity.PlateLayout;
 import com.rgbradford.backend.entity.Project;
 import com.rgbradford.backend.entity.Well;
-import com.rgbradford.backend.entity.WellType;
 import com.rgbradford.backend.util.WellPositionUtils;
 import com.rgbradford.backend.repository.PlateLayoutRepository;
 import com.rgbradford.backend.repository.ProjectRepository;
@@ -35,14 +32,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * Controller for managing plate layouts and their associated wells.
@@ -233,6 +226,16 @@ public class PlateLayoutController {
         }
         plateLayoutRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    // GET /api/plate-layouts/by-project/{projectId} - Get plate layout ID for a given project (one-to-one)
+    @GetMapping("/by-project/{projectId}")
+    public ResponseEntity<Map<String, Long>> getPlateIdByProject(@PathVariable Long projectId) {
+        return projectRepository.findById(projectId)
+                .map(Project::getPlateLayout)
+                .filter(pl -> pl != null)
+                .map(pl -> ResponseEntity.ok(Map.of("plateLayoutId", pl.getId())))
+                .orElse(ResponseEntity.notFound().build());
     }
 
     // GET /api/plate-layouts/{id}/wells - Get all wells for a plate
