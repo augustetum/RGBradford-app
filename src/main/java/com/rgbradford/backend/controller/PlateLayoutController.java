@@ -228,6 +228,16 @@ public class PlateLayoutController {
         return ResponseEntity.noContent().build();
     }
 
+    // GET /api/plate-layouts/by-project/{projectId} - Get plate layout ID for a given project (one-to-one)
+    @GetMapping("/by-project/{projectId}")
+    public ResponseEntity<Map<String, Long>> getPlateIdByProject(@PathVariable Long projectId) {
+        return projectRepository.findById(projectId)
+                .map(Project::getPlateLayout)
+                .filter(pl -> pl != null)
+                .map(pl -> ResponseEntity.ok(Map.of("plateLayoutId", pl.getId())))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
     // GET /api/plate-layouts/{id}/wells - Get all wells for a plate
     @GetMapping("/{id}/wells")
     public ResponseEntity<List<WellResponse>> getWellsForPlate(@PathVariable Long id) {
