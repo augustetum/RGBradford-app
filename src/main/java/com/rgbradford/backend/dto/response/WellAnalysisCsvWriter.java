@@ -51,8 +51,8 @@ public class WellAnalysisCsvWriter {
         }
 
         for (WellAnalysis wa : results) {
-            // Skip wells explicitly marked as EMPTY
-            if (wa.getWell() != null && wa.getWell().getType() == WellType.EMPTY) {
+            // Include only SAMPLE wells; skip EMPTY and all other types
+            if (wa.getWell() == null || wa.getWell().getType() != WellType.SAMPLE) {
                 continue;
             }
             double ratio = wa.getBlueToGreenRatio() != null ? wa.getBlueToGreenRatio() : Double.NaN;
