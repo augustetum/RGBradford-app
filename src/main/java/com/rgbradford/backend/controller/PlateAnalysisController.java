@@ -75,8 +75,9 @@ public class PlateAnalysisController {
     public ResponseEntity<byte[]> downloadCsv(@PathVariable Long plateLayoutId) {
         // Fetch all WellAnalysis for the given plateLayoutId using the custom query
         List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
-
-        String csv = WellAnalysisCsvWriter.toCsvString(results);
+        // Fetch calibration curve to include points and enable y=mx+b computation
+        StandardCurveDto curve = standardCurveService.getStandardCurve(plateLayoutId);
+        String csv = WellAnalysisCsvWriter.toCsvString(results, curve);
 
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=plate_" + plateLayoutId + "_results.csv")
@@ -130,11 +131,29 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
         sheet.autoSizeColumn(0);
         sheet.autoSizeColumn(1);
 
+        // Compute slope (m) and intercept (b) on the Calibration Points sheet using Excel functions
+        // Place labels in C1:D1 and formulas in C2:D2
+        Row calcHeader = sheet.createRow(0 + 1); // ensure row 1 exists (already created). We'll use separate cells instead
+        // Slope label and value
+        sheet.getRow(0).createCell(2).setCellValue("Slope (m)");
+        sheet.getRow(0).createCell(3).setCellValue("Intercept (b)");
+        // Put formulas into row 2 (index 1)
+        Row calcRow = sheet.getRow(1) != null ? sheet.getRow(1) : sheet.createRow(1);
+        int lastDataRow = points.size(); // data rows are from 1..points.size()
+        String xRange = String.format("A2:A%d", lastDataRow + 1);
+        String yRange = String.format("B2:B%d", lastDataRow + 1);
+        Cell slopeCell = calcRow.createCell(2);
+        slopeCell.setCellFormula(String.format("IF(COUNTA(%s)>=2,SLOPE(%s,%s),\"\")", xRange, yRange, xRange));
+        slopeCell.setCellStyle(numberStyle);
+        Cell interceptCell = calcRow.createCell(3);
+        interceptCell.setCellFormula(String.format("IF(COUNTA(%s)>=2,INTERCEPT(%s,%s),\"\")", xRange, yRange, xRange));
+        interceptCell.setCellStyle(numberStyle);
+
         // Sheet 2: Well Analysis (with Dilution Factor columns)
         XSSFSheet wellSheet = workbook.createSheet("Well Analysis");
         String[] wellHeaders = {
                 "Row", "Column", "Green", "Blue", "Blue/Green Ratio",
-                "Calculated Concentration", "Dilution Factor", "Adjusted Concentration"
+                "Calculated Concentration (m*x+b)", "Dilution Factor", "Adjusted Concentration"
         };
         Row wellHeaderRow = wellSheet.createRow(0);
         for (int i = 0; i < wellHeaders.length; i++) {
@@ -160,7 +179,10 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
             cRatio.setCellStyle(numberStyle);
 
             Cell cCalc = row.createCell(5);
-            cCalc.setCellValue(wa.getCalculatedConcentration() != null ? wa.getCalculatedConcentration() : 0.0);
+            // Formula: m*x + b using slope/intercept from Calibration Points!C2 and D2
+            int excelRow = wr + 1; // current wellSheet row number in Excel
+            String calcFormula = String.format("IFERROR('Calibration Points'!$C$2*E%d + 'Calibration Points'!$D$2, \"\")", excelRow);
+            cCalc.setCellFormula(calcFormula);
             cCalc.setCellStyle(numberStyle);
 
             // Column 6 (index 6): Dilution Factor - left blank for user input
@@ -168,10 +190,8 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
 
             // Column 7 (index 7): Adjusted Concentration = Calculated * DilutionFactor (if provided)
             Cell cAdj = row.createCell(7);
-            // Excel rows are 1-based; header is row 1, first data row is 2
-            int excelRow = wr + 1;
-            String formula = String.format("IFERROR(F%d*G%d, \"\")", excelRow, excelRow);
-            cAdj.setCellFormula(formula);
+            String adjFormula = String.format("IFERROR(F%d*G%d, \"\")", excelRow, excelRow);
+            cAdj.setCellFormula(adjFormula);
             cAdj.setCellStyle(numberStyle);
 
             wr++;
