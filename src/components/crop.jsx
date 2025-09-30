@@ -16,8 +16,8 @@ function Crop({
   setOldSelection,
 }) {
   return (
-    <div className="w-[min(90vw,50rem)] flex gap-4 justify-center mt-6 flex-wrap">
-      <button onClick={() => {setImage(null); setUploadStage('upload')}} className="btn">
+    <div className="w-[min(90vw,50rem)] flex gap-4 justify-center mt-6 flex-wrap text-base">
+      <button onClick={() => {setImage(null); setUploadStage('upload')}} className="btn text-base">
         Clear Image
       </button>
       <button
@@ -25,7 +25,7 @@ function Crop({
           toggleSelectMode();
           setSizeMode(false);
         }}
-        className={`btn ${
+        className={`btn text-base ${
           selectMode ? "!bg-red-600 !text-white" : ""
         }`}
       >
@@ -34,13 +34,13 @@ function Crop({
       <button
         onClick={crop}
         disabled={!selection || selection.w === 0 || selection.h === 0}
-        className="btn"
+        className="btn text-base"
       >
         Crop
       </button>
       <button
         onClick={reset}
-        className="btn"
+        className="btn text-base"
       >
         Reset To Original
       </button>
@@ -53,7 +53,7 @@ function Crop({
           setOriginalImage(displayedImage);
           setOldSelection(null);
         }}
-        className="btn !bg-green-500 font-bold"
+        className="btn !bg-green-500 font-bold text-base"
       >
         Submit
       </button>

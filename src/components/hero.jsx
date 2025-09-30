@@ -6,7 +6,7 @@ function Hero({name}) {
         <>
         <header className='text-center mt-4 pb-4 text-3xl font-semibold'>
           <h2>Welcome back!</h2>
-          
+
         </header>
         
         <ul className='flex sm:flex-row flex-col items-center justify-center gap-10 my-4'>
@@ -14,14 +14,14 @@ function Hero({name}) {
           <div className="flex sm:flex-col flex-row gap-10 ">
             <li className=' drop'>
               <a className='' href="protocol.com">
-              <div className='hoverRaise elipsoid  px-4 py-8 font-bold bg-igem-white text-igem-black'>
+              <div className='hoverRaise elipsoid  px-4 py-8 font-bold bg-igem-white text-igem-black text-base'>
                 Read the protocol
               </div>
               </a>
             </li>
             <li className=' drop'>
               <a className='' href="tutorial.com">
-              <div className='hoverRaise elipsoid px-4 py-8 font-bold bg-igem-white text-igem-black'>
+              <div className='hoverRaise elipsoid px-4 py-8 font-bold bg-igem-white text-igem-black text-base'>
                 Watch the tutorial
               </div>
               </a>

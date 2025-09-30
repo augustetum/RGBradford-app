@@ -8,7 +8,7 @@ import Parameters from "./parameters.jsx";
 import tutorial from "../tutorial.jsx";
 import { desc } from "motion/react-client";
 
-function Upload({setCurrentScreen, showNotification}) {  
+function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) {  
   const [image, setImage] = useState(null);
   const [coords, setCoords] = useState({x: 0, y:0});
   const [coordsOrigin, setCoordsOrigin] = useState(null);
@@ -162,7 +162,7 @@ const handleDescriptionName = async (e, name, description) => {
 
 const handleFinalSubmit = async (updatedWellCenters) => {
   const token = localStorage.getItem("token");
-  
+
   const analysisParams = {
     columns: columnCount,
     rows: rowCount,
@@ -174,18 +174,24 @@ const handleFinalSubmit = async (updatedWellCenters) => {
   };
 
   try {
+    showLoading("Creating plate layout...");
     const plateId = await createPlateLayout(projectId, rowCount, columnCount, token);
     setPlateId(plateId);
-    
-    await submitWells(plateId, updatedWellCenters, token);
-    await uploadAndAnalyzeImage(plateId, displayedImage, analysisParams, token);
-    
-    showSuccess("All operations completed successfully!");
 
-    handleCalibrationGet(plateId, token)
-    setUploadStage('showCurve')
+    showLoading("Submitting well data...");
+    await submitWells(plateId, updatedWellCenters, token);
+
+    showLoading("Uploading and analyzing image...");
+    await uploadAndAnalyzeImage(plateId, displayedImage, analysisParams, token);
+
+    showLoading("Generating calibration curve...");
+    await handleCalibrationGet(plateId, token);
+
+    hideLoading("✅ All operations completed successfully!", "success");
+    setCurrentScreen('catalog');
 
   } catch (error) {
+    hideLoading();
     handleError(error);
   }
 };
@@ -496,8 +502,8 @@ const handleFinalSubmit = async (updatedWellCenters) => {
 
       {uploadStage === 'upload' && (
         <>
-        <button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray 
-          rounded-xl flex justify-center items-center'>
+        <button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray
+          rounded-xl flex justify-center items-center text-base'>
         <div>
           <img src={plusIcon} className='mx-auto w-10 ' />
           <input
@@ -511,11 +517,11 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         </div>
       </button>
       <form action="" className="flex flex-col gap-4 items-center mt-4">
-        <div>
+        <div className="text-base">
           <label className='text-left' htmlFor="name">Project Name</label>
-          <input type="text" id="name" className="inpt !w-full max-w-100 " onChange={(e) => setName(e.target.value)}/>  
+          <input type="text" id="name" className="inpt !w-full max-w-100 " onChange={(e) => setName(e.target.value)}/>
         </div>
-        <div>
+        <div className="text-base">
           <label htmlFor="desc">Project Description</label>
           <textarea type="s" id="desc" className="inpt !w-full max-w-100 h-20" onChange={(e) => setDescription(e.target.value)}/>
         </div>

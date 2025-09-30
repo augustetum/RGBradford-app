@@ -28,7 +28,7 @@ function Calibration({setWellCenters, wellCenters, setUploadStage, handleFinalSu
     handleFinalSubmit(updatedWellCenters)
   } 
   return(
-    <div className="w-[min(90vw, 50rem)]">
+    <div className="w-[min(90vw, 50rem)] text-base">
       <div className={`grid gap-4`}     
       style={{
       gridTemplateColumns: `4rem repeat(${maxColumn - minColumn + 1}, minmax(0,1fr))`,
@@ -83,10 +83,10 @@ function Calibration({setWellCenters, wellCenters, setUploadStage, handleFinalSu
           </p>
         ))}
       </div>
-      <button onClick={() => setUploadStage('wellSelection')} className={`mr-4 mt-4 font-bold !bg-red-500 btn`}>
+      <button onClick={() => setUploadStage('wellSelection')} className={`mr-4 mt-4 font-bold !bg-red-500 btn text-base`}>
         Back
       </button>
-      <button onClick={submit} className={`mt-4 font-bold !bg-green-500 btn`}>
+      <button onClick={submit} className={`mt-4 font-bold !bg-green-500 btn text-base`}>
         Submit
       </button>
 

@@ -59,11 +59,11 @@ function ProjectList({showLoading, setNotification, setProjects, projects, handl
   }, []);
 
   return (
-       <main>
+       <main className="text-base">
         <h2 className='mb-2 text-xl font-semibold text-left'>Recent projects</h2>
         <ul className=''>
           {projects.map((project, i) => (
-            <li key={String(project.id) + "project"} onClick={() => handleSwitch(i, "project")} className='cursor-pointer hoverRaise flex justify-between rounded-2xl p-2 pl-4 mb-3 bg-igem-white'>
+            <li key={String(project.id) + "project"} onClick={() => handleSwitch(i, "project")} className='cursor-pointer hoverRaise flex justify-between rounded-2xl p-2 pl-4 mb-3 bg-igem-white text-base'>
               <div>
                 <h3 className='text-left font-semibold text-igem-black'>{project.name}</h3>
                 <p className='text-left text-sm text-igem-black opacity-80'>{project.createdAt}</p>
@@ -82,19 +82,19 @@ function ProjectList({showLoading, setNotification, setProjects, projects, handl
             <button
               onClick={handlePreviousPage}
               disabled={currentPage === 0}
-              className="px-4 py-2 bg-igem-blue text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80"
+              className="px-4 py-2 bg-igem-blue text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80 text-base"
             >
               Previous
             </button>
 
-            <span className="text-igem-white">
+            <span className="text-igem-white text-base">
               Page {currentPage + 1} of {totalPages} ({totalElements} total)
             </span>
 
             <button
               onClick={handleNextPage}
               disabled={currentPage >= totalPages - 1}
-              className="px-4 py-2 bg-igem-blue text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80"
+              className="px-4 py-2 bg-igem-blue text-white rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-opacity-80 text-base"
             >
               Next
             </button>

@@ -9,7 +9,7 @@ import Account from './components/account.jsx'
 import Upload from './components/upload.jsx'
 import Signup from './components/signup.jsx'
 import Login from './components/login.jsx'
-
+import { AccessibilityWidget } from './components/AccessibilityWidget.jsx'
 function App() {
   const [currentProject, setProject] = useState(0)
   const [currentScreen, setCurrentScreen] = useState('signup')    
@@ -82,6 +82,7 @@ function App() {
 
   return (
     <div className='text-center text-igem-white bg-igem-dblue min-h-[100vh] flex flex-col'>
+      <AccessibilityWidget />
       <AnimatePresence>
         {notification && (
           <motion.div
@@ -105,7 +106,7 @@ function App() {
                 <span className="text-sm font-medium">{notification.message}</span>
               </div>
               {!notification.loading && (
-                <button 
+                <button
                   onClick={() => setNotification(null)}
                   className="ml-3 text-xl leading-none hover:opacity-70"
                 >
@@ -117,7 +118,7 @@ function App() {
         )}
       </AnimatePresence>
       
-      <div className={`mx-auto w-200 mt-10 mb-35 max-w-[min(90vw,50rem)]`}>
+      <div className={`mx-auto w-200 mt-10 mb-45 max-w-[min(90vw,50rem)]`}>
       <AnimatePresence mode="wait">
       <motion.div
        key={currentScreen}
@@ -136,10 +137,10 @@ function App() {
       {!isAuthenticated && currentScreen !== 'login' && currentScreen !== 'signup' && (
         <Login setCurrentScreen={setCurrentScreen} onLogin={handleLogin}/>
       )}
-      {currentScreen === 'catalog' && isAuthenticated && (<>
+      {currentScreen === 'catalog' && isAuthenticated && (<div className="text-base">
       <Hero name={data.name}/>
       <ProjectList setNotification={setNotification} showLoading={showLoading} projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
-      </>)}
+      </div>)}
       {currentScreen === 'project' && isAuthenticated && (
         <Project project={projects[currentProject]}/>
       )}
@@ -147,12 +148,14 @@ function App() {
         <Account data={data} onLogout={handleLogout}/>
       )}
       {currentScreen === 'upload' && isAuthenticated && (
-        <Upload showNotification={showNotification} setCurrentScreen={setCurrentScreen}/>
+        <Upload showNotification={showNotification} showLoading={showLoading} hideLoading={hideLoading} setCurrentScreen={setCurrentScreen}/>
       )}  
       </motion.div>
       </AnimatePresence>
       </div>
       {isAuthenticated && (<Footer handleSwitch={handleSwitch}/>)}
+      <footer id="license" className='ignore-accessibility text-base bg-igem-dblue-highlight w-full fixed bottom-0 left-0 right-0 pt-2 h-10 text-center mt-auto'>
+      © 2025 - Content on this site is licensed under the GNU Public License.</footer>
     </div>
   )
 }

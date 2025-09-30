@@ -87,8 +87,8 @@ function WellSelection({ setWellCenters, originalImage, measuredDistance, wellCe
       if (canvasRef.current && displayedImage) {
         draw();
       }}}>
-        <div className=" p-2 bg-igem-gray 
-          rounded-xl flex flex-col">
+        <div className=" p-2 bg-igem-gray
+          rounded-xl flex flex-col text-base">
           
         <canvas
           ref={canvasRef}
@@ -99,18 +99,18 @@ function WellSelection({ setWellCenters, originalImage, measuredDistance, wellCe
           onClick={handleToggle}
         />
         </div>
-        <div className="w-[min(90vw,50rem)]">
+        <div className="w-[min(90vw,50rem)] text-base">
           <div className="flex gap-4 justify-center mt-6 flex-wrap">
-            <button onClick={() => setWellType('EMPTY')} className={`${wellType == 'EMPTY' ? '!bg-red-500' : ""} btn`}>
+            <button onClick={() => setWellType('EMPTY')} className={`${wellType == 'EMPTY' ? '!bg-red-500' : ""} btn text-base`}>
               Clear Well
             </button>
-            <button onClick={() => setWellType('STANDARD')} className={`${wellType == 'STANDARD' ? '!bg-orange-500' : ""} btn`}>
+            <button onClick={() => setWellType('STANDARD')} className={`${wellType == 'STANDARD' ? '!bg-orange-500' : ""} btn text-base`}>
               Select Calibration
             </button>
-            <button onClick={() => setWellType('SAMPLE')} className={`${wellType == 'SAMPLE' ? '!bg-purple-500' : ""} btn`}>
+            <button onClick={() => setWellType('SAMPLE')} className={`${wellType == 'SAMPLE' ? '!bg-purple-500' : ""} btn text-base`}>
               Select Sample
             </button>
-            <button onClick={submit} className={`font-bold !bg-green-500 btn`}>
+            <button onClick={submit} className={`font-bold !bg-green-500 btn text-base`}>
               Submit
             </button>
           </div>

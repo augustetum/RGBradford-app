@@ -13,7 +13,6 @@
 
 .hoverRaise:hover {
     transform: translateY(-0.2rem);
-
 }
 
 p {
@@ -22,9 +21,10 @@ p {
     font-weight: 600;
 }
 
-button {
+button 
+{
     cursor: pointer;
-  }
+}
 
 .btn {
     background-color: var(--color-igem-gray);

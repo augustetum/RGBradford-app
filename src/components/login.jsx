@@ -34,12 +34,12 @@ export default function Login({setCurrentScreen, setIsAuthenticated}) {
 
 
   return (
-    <div className="flex flex-col gap-4 h-[50vh] items-center justify-center">
+    <div className="flex flex-col gap-4 h-[50vh] items-center justify-center text-base">
       <form
         onSubmit={handleLogin}
         className="w-full max-w-sm space-y-4 rounded-2xl bg-white p-6 shadow-md"
       >
-        <h1 className="text-2xl font-semibold text-gray-800">Login</h1>
+        <h1 className="text-2xl font-semibold text-gray-800 text-base">Login</h1>
 
         <input
           type="email"
@@ -59,15 +59,15 @@ export default function Login({setCurrentScreen, setIsAuthenticated}) {
           required
         />
 
-        <button type="submit" className="btn !bg-green-400">
+        <button type="submit" className="btn !bg-green-400 text-base">
           Login
         </button>
 
         {message && (
-          <p className="text-center text-sm text-gray-600">{message}</p>
+          <p className="text-center text-sm text-gray-600 text-base">{message}</p>
         )}
       </form>
-        <p className="cursor-pointer !text-white hover:underline" onClick={() => setCurrentScreen('signup')}>Don't have an account? Sign up!</p>
+        <p className="cursor-pointer !text-white hover:underline text-base" onClick={() => setCurrentScreen('signup')}>Don't have an account? Sign up!</p>
 
     </div>
   );
