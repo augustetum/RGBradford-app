@@ -1,0 +1,59 @@
+.elipsoid {
+    clip-path: ellipse(50% 50%);
+}
+
+.drop {
+    filter: drop-shadow(0 0.4rem 0.1rem rgba(0, 0, 0, 0.5));
+}
+
+.hoverRaise {
+    transform: translateY(0);
+    transition: transform 0.2s ease-in-out;
+}
+
+.hoverRaise:hover {
+    transform: translateY(-0.2rem);
+}
+
+p {
+    opacity: 0.8;
+    color: var(--color-igem-black);
+    font-weight: 600;
+}
+
+button 
+{
+    cursor: pointer;
+}
+
+.btn {
+    background-color: var(--color-igem-gray);
+    color: var(--color-igem-black);
+    border: 2px var(--color-igem-black) solid;
+    border-radius: 0.75rem;
+    padding: 0.5rem;
+    transition: all 0.1s ease;
+    transform: translateY(-0.2rem);
+    box-shadow: 0rem 0.5rem black;
+}
+
+.btn:hover {
+    transform: translateY(-0.33rem);
+    box-shadow: 0rem 0.63rem black;
+}
+
+.btn:active {
+
+    transform: translateY(0rem);
+    box-shadow: 0rem 0.30rem black;;
+}
+
+.inpt {
+    padding: 0.25rem 0.5rem;
+    border: 2px black solid;
+    border-radius: 0.5rem;
+    width: 4rem;
+    text-align: left;
+    background-color: var(--color-igem-white);
+    color: black;
+}

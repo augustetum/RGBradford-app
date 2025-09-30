@@ -1,0 +1,178 @@
+@import "tailwindcss";
+
+@font-face {
+    font-family: "Inter";
+    src: url("https://static.igem.wiki/teams/5780/fonts/inter-variablefont-opsz-wght.ttf") format("truetype");
+    font-weight: 100 900; 
+    font-style: normal;
+  }
+  
+@font-face {
+    font-family: "Inter";
+    src: url("https://static.igem.wiki/teams/5780/fonts/inter-italic-variablefont-opsz-wght.ttf") format("truetype");
+    font-weight: 100 900; 
+    font-style: italic;
+}
+
+
+html.inverted-mode {
+    filter: invert(1);
+  }
+
+:root {
+  font-family: Inter, system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Accessibility custom properties */
+  --accessibility-font-multiplier: 1;
+  --accessibility-line-height-offset: 0px;
+  --accessibility-letter-spacing-offset: 0px;
+}
+@font-face {
+    font-family: "AtkinsonHyperlegible";
+    src: url("https://static.igem.wiki/teams/5780/fonts/atkinsonhyperlegible-regular.ttf") format("truetype");
+    font-weight: 400;
+    font-style: normal;
+   }
+   
+   @font-face {
+    font-family: "AtkinsonHyperlegible";
+    src: url("https://static.igem.wiki/teams/5780/fonts/atkinsonhyperlegible-bold.ttf") format("truetype");
+    font-weight: 700;
+    font-style: normal;
+   }
+   
+   @font-face {
+    font-family: "AtkinsonHyperlegible";
+    src: url("https://static.igem.wiki/teams/5780/fonts/atkinsonhyperlegible-italic.ttf") format("truetype");
+    font-weight: 400;
+    font-style: italic;
+   }
+   
+   @font-face {
+    font-family: "AtkinsonHyperlegible";
+    src: url("https://static.igem.wiki/teams/5780/fonts/atkinsonhyperlegible-bolditalic.ttf") format("truetype");
+    font-weight: 700;
+    font-style: italic;
+   }
+   
+   /* OpenDyslexic */
+   @font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://static.igem.wiki/teams/5780/fonts/opendyslexic-regular.otf") format("opentype");
+    font-weight: 400;
+    font-style: normal;
+   }
+   
+   @font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://static.igem.wiki/teams/5780/fonts/opendyslexic-bold.otf") format("opentype");
+    font-weight: 700;
+    font-style: normal;
+   }
+   
+   @font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://static.igem.wiki/teams/5780/fonts/opendyslexic-italic.otf") format("opentype");
+    font-weight: 400;
+    font-style: italic;
+   }
+   
+   @font-face {
+    font-family: "OpenDyslexic";
+    src: url("https://static.igem.wiki/teams/5780/fonts/opendyslexic-bold-italic.otf") format("opentype");
+    font-weight: 700;
+    font-style: italic;
+   }
+
+/* Accessibility adjustments for text classes */
+.text-xs:not(.ignore-accessibility) {
+  font-size: calc(0.75rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-sm:not(.ignore-accessibility) {
+  font-size: calc(0.875rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1.25rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-base:not(.ignore-accessibility) {
+  font-size: calc(1rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1.5rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-md:not(.ignore-accessibility) {
+  font-size: calc(1rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1.5rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-lg:not(.ignore-accessibility) {
+  font-size: calc(1.125rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1.75rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-xl:not(.ignore-accessibility) {
+  font-size: calc(1.25rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1.75rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-2xl:not(.ignore-accessibility) {
+  font-size: calc(1.5rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(2rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-3xl:not(.ignore-accessibility) {
+  font-size: calc(1.875rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(2.25rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-4xl:not(.ignore-accessibility) {
+  font-size: calc(2.25rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(2.5rem + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-5xl:not(.ignore-accessibility) {
+  font-size: calc(3rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1 + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-6xl:not(.ignore-accessibility) {
+  font-size: calc(3.75rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1 + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-7xl:not(.ignore-accessibility) {
+  font-size: calc(4.5rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1 + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-8xl:not(.ignore-accessibility) {
+  font-size: calc(6rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1 + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+.text-9xl:not(.ignore-accessibility) {
+  font-size: calc(8rem * var(--accessibility-font-multiplier)) !important;
+  line-height: calc(1 + var(--accessibility-line-height-offset)) !important;
+  letter-spacing: calc(0px + var(--accessibility-letter-spacing-offset)) !important;
+}
+
+@theme {
+    --color-igem-purple: #3B295E;
+    --color-igem-black: #171717;
+    --color-igem-dred: #761113;
+    --color-igem-red: #c12126;
+    --color-igem-white: #ffffff;
+    --color-igem-blue: #669bbc;
+    --color-igem-dblue: #003049;
+    --color-igem-dblue-highlight: #004366;
+    --color-igem-gray: #D9d9d9;
+}
