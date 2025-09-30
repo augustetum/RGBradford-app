@@ -72,4 +72,17 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         String refreshToken = jwtTokenProvider.generateRefreshToken(user.getEmail());
         return new AuthResponse(accessToken, refreshToken, "Bearer");
     }
-} 
+
+    @Override
+    public void changePassword(String email, String currentPassword, String newPassword) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+            throw new RuntimeException("Current password is incorrect");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
+    }
+}
