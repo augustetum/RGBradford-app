@@ -136,13 +136,18 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
                 
                 int centerX = (int)(xOrigin + col * wellSpacingX);
                 int centerY = (int)(yOrigin + row * wellSpacingY);
-                
+
+                // Determine well and skip if marked as EMPTY
+                Well well = findOrCreateWell(plateLayout, finalRow, finalCol);
+                if (well.getType() == WellType.EMPTY) {
+                    continue;
+                }
+
                 OvalRoi roi = createWellROI(centerX, centerY, circleSize);
                 processor.setRoi(roi);
                 RGBMeasurements measurements = measureRGBChannels(processor, roi);
                 BradfordCalculations calculations = calculateBradfordValues(measurements);
 
-                Well well = findOrCreateWell(plateLayout, finalRow, finalCol);
                 WellAnalysis wellAnalysis = findOrCreateWellAnalysis(well);
                 
                 // Set analysis values with correct calculations

@@ -4,6 +4,7 @@ import com.rgbradford.backend.dto.StandardCurveDto;
 import com.rgbradford.backend.dto.StandardCurvePointDto;
 import com.rgbradford.backend.dto.RegressionResultDto;
 import com.rgbradford.backend.entity.WellAnalysis;
+import com.rgbradford.backend.entity.WellType;
 import java.util.List;
 
 public class WellAnalysisCsvWriter {
@@ -50,6 +51,10 @@ public class WellAnalysisCsvWriter {
         }
 
         for (WellAnalysis wa : results) {
+            // Skip wells explicitly marked as EMPTY
+            if (wa.getWell() != null && wa.getWell().getType() == WellType.EMPTY) {
+                continue;
+            }
             double ratio = wa.getBlueToGreenRatio() != null ? wa.getBlueToGreenRatio() : Double.NaN;
             String calcConc;
             if (m != null && b != null && !Double.isNaN(ratio)) {
@@ -57,6 +62,13 @@ public class WellAnalysisCsvWriter {
             } else {
                 // Fallback to stored value
                 calcConc = wa.getCalculatedConcentration() != null ? formatDouble(wa.getCalculatedConcentration()) : "";
+            }
+
+            // Skip empty wells: neither ratio nor calculated concentration is available
+            boolean hasRatio = !Double.isNaN(ratio);
+            boolean hasCalc = calcConc != null && !calcConc.isEmpty();
+            if (!hasRatio && !hasCalc) {
+                continue;
             }
 
             csv.append(wa.getWell().getRow()).append(",")

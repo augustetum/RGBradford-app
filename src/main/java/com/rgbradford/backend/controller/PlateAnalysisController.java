@@ -7,6 +7,7 @@ import com.rgbradford.backend.dto.request.PlateAnalysisParams;
 import com.rgbradford.backend.dto.response.WellAnalysisCsvWriter;
 import com.rgbradford.backend.dto.response.WellAnalysisResult;
 import com.rgbradford.backend.entity.WellAnalysis;
+import com.rgbradford.backend.entity.WellType;
 import com.rgbradford.backend.repository.WellAnalysisRepository;
 import com.rgbradford.backend.service.impl.PlateAnalysisServiceImpl;
 import com.rgbradford.backend.service.interfaces.StandardCurveService;
@@ -74,7 +75,10 @@ public class PlateAnalysisController {
     @GetMapping("/{plateLayoutId}/csv")
     public ResponseEntity<byte[]> downloadCsv(@PathVariable Long plateLayoutId) {
         // Fetch all WellAnalysis for the given plateLayoutId using the custom query
-        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
+        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId)
+                .stream()
+                .filter(wa -> wa.getWell() != null && wa.getWell().getType() != WellType.EMPTY)
+                .toList();
         // Fetch calibration curve to include points and enable y=mx+b computation
         StandardCurveDto curve = standardCurveService.getStandardCurve(plateLayoutId);
         String csv = WellAnalysisCsvWriter.toCsvString(results, curve);
@@ -87,8 +91,11 @@ public class PlateAnalysisController {
 
  @GetMapping(value = "/{plateLayoutId}/xlsx", produces = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
 public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) throws Exception {
-    // Gather data: calibration points and all well analyses
-    List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
+    // Gather data: calibration points and all well analyses (skip EMPTY wells)
+    List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId)
+            .stream()
+            .filter(wa -> wa.getWell() != null && wa.getWell().getType() != WellType.EMPTY)
+            .toList();
     StandardCurveDto curve = standardCurveService.getStandardCurve(plateLayoutId);
 
     try (XSSFWorkbook workbook = new XSSFWorkbook()) {
@@ -216,7 +223,10 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
 
     @GetMapping("/{plateLayoutId}")
     public ResponseEntity<List<WellAnalysisResult>> getAnalysisResults(@PathVariable Long plateLayoutId) {
-        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
+        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId)
+                .stream()
+                .filter(wa -> wa.getWell() != null && wa.getWell().getType() != WellType.EMPTY)
+                .toList();
 
         if (results.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -231,7 +241,10 @@ public ResponseEntity<byte[]> downloadXlsx(@PathVariable Long plateLayoutId) thr
 
     @GetMapping("/{plateLayoutId}/summary")
     public ResponseEntity<Map<String, Object>> getAnalysisSummary(@PathVariable Long plateLayoutId) {
-        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId);
+        List<WellAnalysis> results = wellAnalysisRepository.findByPlateLayoutId(plateLayoutId)
+                .stream()
+                .filter(wa -> wa.getWell() != null && wa.getWell().getType() != WellType.EMPTY)
+                .toList();
 
         if (results.isEmpty()) {
             return ResponseEntity.notFound().build();
