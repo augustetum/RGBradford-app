@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { API_BASE_URL } from "../config";
 
 function Account({data, onLogout}) {
     const [oldPassword, setOldPassword] = useState("");
@@ -43,7 +44,7 @@ function Account({data, onLogout}) {
 
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch("https://rgbradford-app.onrender.com/api/auth/change-password", {
+            const response = await fetch(`${API_BASE_URL}/auth/change-password`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

@@ -7,6 +7,7 @@ import Crop from "./crop.jsx";
 import Parameters from "./parameters.jsx";
 import tutorial from "../tutorial.jsx";
 import { desc } from "motion/react-client";
+import { API_BASE_URL } from "../config";
 
 function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) {  
   const [image, setImage] = useState(null);
@@ -47,7 +48,7 @@ function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) 
 
 
   const createProject = async (name, description, token) => {
-  const response = await fetch("https://rgbradford-app.onrender.com/api/projects", {
+  const response = await fetch(`${API_BASE_URL}/projects`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -65,7 +66,7 @@ function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) 
 };
 
 const createPlateLayout = async (projectId, rowCount, columnCount, token) => {
-  const response = await fetch("https://rgbradford-app.onrender.com/api/plate-layouts", {
+  const response = await fetch(`${API_BASE_URL}/plate-layouts`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -96,7 +97,7 @@ const submitWells = async (plateId, wellCenters, token) => {
   }));
   console.log(refactoredWells)
   console.log(wellCenters)
-  const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-layouts/${plateId}/wells`, {
+  const response = await fetch(`${API_BASE_URL}/plate-layouts/${plateId}/wells`, {
     method: "POST", 
     headers: {
       "Content-Type": "application/json",
@@ -125,7 +126,7 @@ const uploadAndAnalyzeImage = async (plateId, displayedImage, analysisParams, to
   formData.append("params", JSON.stringify(analysisParams)); 
   formData.append('image', file);
 
-  const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/analyze`, {
+  const response = await fetch(`${API_BASE_URL}/plate-analysis/analyze`, {
     method: "POST", 
     headers: {
       "Authorization": `Bearer ${token}`,
@@ -197,7 +198,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
 };
 
   const handleCalibrationGet = async (plateId, token) => {
-    const response = await fetch(`https://rgbradford-app.onrender.com/api/standard-curve/${plateId}`, {
+    const response = await fetch(`${API_BASE_URL}/standard-curve/${plateId}`, {
     method: "GET", 
     headers: {
       "Authorization": `Bearer ${token}`,

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../config";
 
 export default function Signup({setCurrentScreen}) {
   const [email, setEmail] = useState("");
@@ -31,7 +32,7 @@ export default function Signup({setCurrentScreen}) {
     }
 
     try {
-      const response = await fetch("https://rgbradford-app.onrender.com/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

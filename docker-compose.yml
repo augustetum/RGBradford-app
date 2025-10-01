@@ -1,0 +1,84 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: rgbradford-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpassword}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-rgbradford_db}
+      MYSQL_USER: ${MYSQL_USER:-rgbradford_user}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-dev_password}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init:/docker-entrypoint-initdb.d
+    networks:
+      - rgbradford-network
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-rootpassword}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rgbradford-backend
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Spring profile for local development
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-dev}
+
+      # MySQL Database connection
+      DATABASE_URL: jdbc:mysql://db:3306/${MYSQL_DATABASE:-rgbradford_db}
+      DATABASE_USERNAME: ${MYSQL_USER:-rgbradford_user}
+      DATABASE_PASSWORD: ${MYSQL_PASSWORD:-dev_password}
+      DATABASE_DRIVER: com.mysql.cj.jdbc.Driver
+
+      # JPA/Hibernate configuration
+      JPA_DIALECT: org.hibernate.dialect.MySQLDialect
+      JPA_DDL_AUTO: ${JPA_DDL_AUTO:-update}
+      JPA_SHOW_SQL: ${JPA_SHOW_SQL:-true}
+
+      # JWT settings
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-key-for-development-only-change-in-production}
+
+      # Server configuration
+      PORT: 8080
+
+      # Logging
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      SPRING_LOG_LEVEL: ${SPRING_LOG_LEVEL:-INFO}
+      APP_LOG_LEVEL: ${APP_LOG_LEVEL:-DEBUG}
+
+      # CORS configuration - allows localhost for Docker development
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:3000}
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    networks:
+      - rgbradford-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: rgbradford-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "${FRONTEND_PORT:-3000}:80"
+    networks:
+      - rgbradford-network
+
+networks:
+  rgbradford-network:
+    driver: bridge
+
+volumes:
+  mysql_data:

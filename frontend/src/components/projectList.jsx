@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from "react"
+import { API_BASE_URL } from "../config";
 
 function ProjectList({showLoading, setNotification, setProjects, projects, handleSwitch}) {
   const DEFAULT_SIZE = 20;
@@ -14,7 +15,7 @@ function ProjectList({showLoading, setNotification, setProjects, projects, handl
     try {
       showLoading();
       const token = localStorage.getItem("token")
-      const response = await fetch(`https://rgbradford-app.onrender.com/api/projects?page=${page}&size=${size}&sort=${encodeURIComponent(sort)}`, {
+      const response = await fetch(`${API_BASE_URL}/projects?page=${page}&size=${size}&sort=${encodeURIComponent(sort)}`, {
         method: "GET",
         headers: {
           "Authorization": `Bearer ${token}`,

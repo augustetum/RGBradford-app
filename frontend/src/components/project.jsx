@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { ChartContainer, ScatterPlot, LinePlot, ChartsXAxis, ChartsYAxis } from "@mui/x-charts";
 import { AnimatePresence, motion } from 'framer-motion';
+import { API_BASE_URL } from "../config";
 
 function Project({project}) {
     const [standardCurveData, setStandardCurveData] = useState(null);
@@ -12,7 +13,7 @@ function Project({project}) {
     const getPlateIdByProject = async (projectId) => {
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-layouts/by-project/${projectId}`, {
+            const response = await fetch(`${API_BASE_URL}/plate-layouts/by-project/${projectId}`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -37,7 +38,7 @@ function Project({project}) {
 
         try {
             const token = localStorage.getItem("token");
-            const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/${plateLayoutId}/xlsx`, {
+            const response = await fetch(`${API_BASE_URL}/plate-analysis/${plateLayoutId}/xlsx`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -66,7 +67,7 @@ function Project({project}) {
         try {
             const token = localStorage.getItem("token");
             console.log("trying to get CSV")
-            const response = await fetch(`https://rgbradford-app.onrender.com/api/plate-analysis/${plateAnalysisId}/csv`, {
+            const response = await fetch(`${API_BASE_URL}/plate-analysis/${plateAnalysisId}/csv`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,
@@ -109,7 +110,7 @@ function Project({project}) {
       try {
             setLoading(true);
             const token = localStorage.getItem("token");
-            const response = await fetch(`https://rgbradford-app.onrender.com/api/standard-curve/proj/${project.id}`, {
+            const response = await fetch(`${API_BASE_URL}/standard-curve/proj/${project.id}`, {
                 method: "GET",
                 headers: {
                     "Authorization": `Bearer ${token}`,

@@ -2,6 +2,7 @@ package com.rgbradford.backend.config;
 
 import com.rgbradford.backend.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -17,9 +18,12 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
-    
+
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
+    @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:3000,https://rgbradford.netlify.app}")
+    private String[] allowedOrigins;
     
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -36,13 +40,12 @@ public class SecurityConfig {
         http
             .cors(cors -> cors.configurationSource(request -> {
                 var corsConfig = new org.springframework.web.cors.CorsConfiguration();
-                corsConfig.setAllowedOrigins(java.util.List.of(
-                    "http://localhost:5173",
-                    "https://rgbradford.netlify.app"
-                ));
-                corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+                corsConfig.setAllowedOrigins(java.util.Arrays.asList(allowedOrigins));
+                corsConfig.setAllowedMethods(java.util.List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
                 corsConfig.setAllowedHeaders(java.util.List.of("*"));
+                corsConfig.setExposedHeaders(java.util.List.of("Authorization", "Content-Type"));
                 corsConfig.setAllowCredentials(true);
+                corsConfig.setMaxAge(3600L);
                 return corsConfig;
             }))
             .csrf(csrf -> csrf.disable())

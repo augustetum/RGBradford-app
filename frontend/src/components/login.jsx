@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { API_BASE_URL } from "../config";
 
 export default function Login({setCurrentScreen, setIsAuthenticated}) {
   const [email, setEmail] = useState("");
@@ -8,7 +9,7 @@ export default function Login({setCurrentScreen, setIsAuthenticated}) {
   const handleLogin = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("https://rgbradford-app.onrender.com/api/auth/login", {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
