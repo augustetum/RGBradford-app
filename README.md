@@ -15,13 +15,14 @@ docker-compose up --build
 ### Prerequisites
 
 - [Docker](https://www.docker.com/get-started) (with Docker Compose)
+- [Git](https://git-scm.com/downloads) (to clone the repository)
 - No other configuration needed!
 
 ### First Time Setup
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/augustetum/RGBradford-app.git
    cd RGBradford-app
    ```
 
