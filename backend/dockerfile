@@ -11,9 +11,6 @@ FROM eclipse-temurin:17-jre-jammy
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
-# Use PORT env var from Render, default to 8080 for local development
-ENV PORT=8080
-EXPOSE ${PORT}
-
 # Start Spring Boot with dynamic port
-ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT}"]
+# Uses PORT from Render, or SERVER_PORT from docker-compose, or defaults to 8080
+ENTRYPOINT ["sh", "-c", "java -jar app.jar --server.port=${PORT:-${SERVER_PORT:-8080}}"]
