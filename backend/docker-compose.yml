@@ -19,7 +19,7 @@ services:
       - SPRING_JPA_DATABASE_PLATFORM=${JPA_DIALECT:-org.hibernate.dialect.SQLServerDialect}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=${JPA_DDL_AUTO:-validate}
       - SPRING_JPA_SHOW_SQL=${JPA_SHOW_SQL:-false}
-      SO
+
       # Server configuration
       - PORT=8080
       
