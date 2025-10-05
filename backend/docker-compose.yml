@@ -9,7 +9,7 @@ services:
       # Use production profile for Render
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
       
-      # Azure SQL Database connection (from your screenshot)
+      # Azure SQL Database connection
       - SPRING_DATASOURCE_URL=${DATABASE_URL:-jdbc:sqlserver://rgbradford-server.database.windows.net:1433;database=rgbradford-production;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;}
       - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME:-rgbradford_app}
       - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
@@ -23,15 +23,15 @@ services:
       # Server configuration
       - SERVER_PORT=${PORT:-8080}
       
-      # Optional: Logging configuration
+      # Logging configuration
       - LOGGING_LEVEL_ROOT=${LOG_LEVEL:-INFO}
       - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK=${SPRING_LOG_LEVEL:-INFO}
       - LOGGING_LEVEL_COM_RGBRADFORD=${APP_LOG_LEVEL:-DEBUG}
       
-      # Optional: Security and CORS
+      # Security and CORS
       - CORS_ALLOWED_ORIGINS=${CORS_ORIGINS:-*}
       - JWT_SECRET=${JWT_SECRET}
       
-      # Optional: File upload limits
+      # File upload limits
       - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=${MAX_FILE_SIZE:-10MB}
       - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10MB}
