@@ -27,9 +27,7 @@ services:
         value: validate
       - key: JPA_SHOW_SQL
         value: false
-      # Server configuration
-      - key: PORT
-        value: 8080
+      # Server configuration - PORT is automatically set by Render
       # JWT Secret
       - key: JWT_SECRET
         sync: false
