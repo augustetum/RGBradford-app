@@ -111,7 +111,7 @@ function WellSelection({ setWellCenters, originalImage, measuredDistance, wellCe
               Select Sample
             </button>
             <button onClick={submit} className={`font-bold !bg-green-500 btn text-base`}>
-              Submit
+              Next
             </button>
           </div>
         </div>

@@ -55,7 +55,7 @@ function Crop({
         }}
         className="btn !bg-green-500 font-bold text-base"
       >
-        Submit
+        Next
       </button>
     </div>
   );
