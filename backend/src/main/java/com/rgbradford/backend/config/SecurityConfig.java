@@ -22,7 +22,7 @@ public class SecurityConfig {
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:3000,https://rgbradford.netlify.app}")
+    @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:3000,https://rgbradford.netlify.app, https://rgbradford-frontend.onrender.com/}")
     private String[] allowedOrigins;
     
     @Bean
