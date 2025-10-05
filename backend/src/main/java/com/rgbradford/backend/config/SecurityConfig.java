@@ -53,11 +53,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> {
 
                 //public endpoints
-                auth.requestMatchers("/api/auth/**").permitAll();
-                auth.requestMatchers("/api/plate-analysis/analyze").permitAll();
-                auth.requestMatchers("/api/plate-analysis/*/reanalyze").permitAll();
-                auth.requestMatchers("/api/plate-layouts/*/group-wells").permitAll();
-                auth.requestMatchers("/api/test/**").permitAll();
+                auth.requestMatchers(
+                    "/api/auth/**",
+                    "/api/plate-analysis/analyze",
+                    "/api/plate-analysis/*/reanalyze",
+                    "/api/plate-layouts/*/group-wells",
+                    "/api/test/**"
+                ).permitAll();
 
                 //API documentation
                 auth.requestMatchers(
@@ -65,11 +67,13 @@ public class SecurityConfig {
                     "/v3/api-docs/**",
                     "/swagger-ui.html",
                     "/api-docs/**",
-                    
                     "/swagger-resources/**",
                     "/webjars/**",
                     "/configuration/**"
                 ).permitAll();
+                
+                // Actuator health check
+                auth.requestMatchers("/actuator/health/**").permitAll();
 
                 //for all other requests, authentication is needed
                 auth.anyRequest().authenticated();

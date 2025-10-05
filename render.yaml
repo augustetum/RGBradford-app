@@ -3,12 +3,14 @@ services:
   - type: web
     name: rgbradford-backend
     env: docker
-    port: 10000
     region: oregon
     plan: free
     dockerfilePath: ./backend/dockerfile
     dockerContext: ./backend
     healthCheckPath: /actuator/health
+    healthCheckTimeout: 120s
+    healthCheckInterval: 30s
+    healthCheckThreshold: 3
     envVars:
       - key: SPRING_PROFILES_ACTIVE
         value: prod
