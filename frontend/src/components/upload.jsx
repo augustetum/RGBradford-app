@@ -285,7 +285,10 @@ const handleFinalSubmit = async (updatedWellCenters) => {
     
       canvas.width = width;
       canvas.height = height;
-    
+      
+      const lineStrokeWidth = Math.max(2,Math.floor(Math.max(width,height)/300))
+      const cornerMarkerRadius = Math.max(5,Math.floor(Math.max(width,height)/200))
+
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
       if (selection) {
@@ -297,7 +300,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         ctx.fill("evenodd");
     
         ctx.strokeStyle = "red";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lineStrokeWidth;
         ctx.setLineDash([6, 4]);
         ctx.strokeRect(selection.x, selection.y, selection.w, selection.h);
         ctx.restore();
@@ -306,21 +309,21 @@ const handleFinalSubmit = async (updatedWellCenters) => {
       if (coordsOrigin) {
         ctx.beginPath();
         ctx.fillStyle = "green";
-        if (!selectionOld) ctx.arc(coordsOrigin.x, coordsOrigin.y, 5, 0, Math.PI * 2);
-        else ctx.arc(coordsOrigin.x-selectionOld.x, coordsOrigin.y-selectionOld.y, 5, 0, Math.PI * 2);
+        if (!selectionOld) ctx.arc(coordsOrigin.x, coordsOrigin.y, cornerMarkerRadius, 0, Math.PI * 2);
+        else ctx.arc(coordsOrigin.x-selectionOld.x, coordsOrigin.y-selectionOld.y, cornerMarkerRadius, 0, Math.PI * 2);
         ctx.fill();
       }
       if (coordsEnd) {
         ctx.beginPath();
         ctx.fillStyle = "red";
-        if (!selectionOld) ctx.arc(coordsEnd.x, coordsEnd.y, 5, 0, Math.PI * 2);
-        else ctx.arc(coordsEnd.x-selectionOld.x, coordsEnd.y-selectionOld.y, 5, 0, Math.PI * 2);
+        if (!selectionOld) ctx.arc(coordsEnd.x, coordsEnd.y, cornerMarkerRadius, 0, Math.PI * 2);
+        else ctx.arc(coordsEnd.x-selectionOld.x, coordsEnd.y-selectionOld.y, cornerMarkerRadius, 0, Math.PI * 2);
         ctx.fill();
       }
       if (sizeLine) {
         ctx.beginPath();
         ctx.strokeStyle = "red";
-        ctx.lineWidth = 2;
+        ctx.lineWidth = lineStrokeWidth;
         ctx.setLineDash([]); 
         if (!selectionOld || sizeMode) {
           ctx.moveTo(sizeLine.x1, sizeLine.y1);
@@ -338,7 +341,8 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         const diameter = measuredDistance
         const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
         const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
-        
+        ctx.lineWidth = lineStrokeWidth;
+
         for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
           for (let indexRow = 0; indexRow < rowCount; indexRow++) {
             let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
@@ -357,7 +361,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
       if (displayedImage) {
         draw();
       }
-    }, [draw, displayedImage, selection, coordsOrigin, coordsEnd, sizeLine]);
+    }, [draw, displayedImage, selection, coordsOrigin, coordsEnd, sizeLine, rowCount, columnCount]);
     
   
     const getPointerPos = (e, ref) => {
@@ -503,6 +507,16 @@ const handleFinalSubmit = async (updatedWellCenters) => {
 
       {uploadStage === 'upload' && (
         <>
+        <form action="" className="flex flex-col gap-4 items-center mb-4">
+        <div className="text-base">
+          <label className='text-left' htmlFor="name">Project Name</label>
+          <input type="text" id="name" className="inpt !w-full max-w-100 " onChange={(e) => setName(e.target.value)}/>
+        </div>
+        <div className="text-base">
+          <label htmlFor="desc">Project Description</label>
+          <textarea type="s" id="desc" className="inpt !w-full max-w-100 h-20" onChange={(e) => setDescription(e.target.value)}/>
+        </div>
+        </form>
         <button onClick={handleInputContainerClick} className='cursor-pointer w-[min(90vw,50rem)] h-[30vh] bg-igem-gray
           rounded-xl flex justify-center items-center text-base'>
         <div>
@@ -517,16 +531,6 @@ const handleFinalSubmit = async (updatedWellCenters) => {
           <p>upload plate</p>
         </div>
       </button>
-      <form action="" className="flex flex-col gap-4 items-center mt-4">
-        <div className="text-base">
-          <label className='text-left' htmlFor="name">Project Name</label>
-          <input type="text" id="name" className="inpt !w-full max-w-100 " onChange={(e) => setName(e.target.value)}/>
-        </div>
-        <div className="text-base">
-          <label htmlFor="desc">Project Description</label>
-          <textarea type="s" id="desc" className="inpt !w-full max-w-100 h-20" onChange={(e) => setDescription(e.target.value)}/>
-        </div>
-        </form>
       </>
     )}
 
