@@ -2,21 +2,18 @@
 
 <img src="https://img.shields.io/badge/version-1.0.0-blue.svg"> <img src="https://img.shields.io/badge/java-17%2B-orange.svg?logo=openjdk&logoColor=white"> <img src="https://img.shields.io/badge/Spring%20Boot-3.5.3-brightgreen.svg"> <img src="https://img.shields.io/badge/React-19.1.1-61DAFB.svg?logo=react"> <img src="https://img.shields.io/badge/Tailwind_CSS-4.x-38B2AC.svg?logo=tailwindcss&logoColor=white"> <img src="https://img.shields.io/badge/API-REST-blueviolet.svg">  <img src="https://img.shields.io/badge/docker-supported-2496ED.svg?logo=docker&logoColor=white">
 
-<p>RGBradford is a web-based platform that analyzes microplate photographs and automatically provides protein calculations.</p>
+<p>RGBradford is a software tool that analyzes microplate images and automatically generates a calibration curve and calculates protein concentrations.</p>
 
-## Quick Start with Docker
+<p>The documentation for this project can be found here: <a href="https://2025.igem.wiki/vilnius-lithuania/software/">Software Documentation</a></p>
 
-Run the entire application (frontend, backend, and database) with a single command:
-
-```bash
-docker-compose up --build
-```
+## Installation
+<p>The tool is easily installable with Docker, if you want to install the system locally. Otherwise, the <b>tool is accessible via our <a href>web client.</a></b></p>
 
 ### Prerequisites
 
 - [Docker](https://www.docker.com/get-started) (with Docker Compose)
 - [Git](https://git-scm.com/downloads) (to clone the repository)
-- No other configuration needed!
+- No other configuration needed.
 
 ### First Time Setup
 
@@ -53,25 +50,9 @@ docker-compose down -v
 docker-compose up --build
 ```
 
-### Architecture
-
-**Local Development (Docker Compose):**
-- Frontend (React + Vite) served by Nginx on port 3000
-- Backend (Spring Boot) on port 8080
-- MySQL 8.0 database on port 3306
-- Nginx proxies `/api` requests from frontend to backend
-- All services communicate via Docker network
-
-**Request Flow:**
-```
-Browser → http://localhost:3000 → Nginx (Frontend)
-                                    ↓
-                                  /api/* → Backend (Spring Boot) → MySQL
-```
-
 ---
-
-### Optional: Custom Environment Variables
+<details>
+<summary> <h3>Optional: Custom Environment Variables </h3></summary>
 
 The application uses sensible defaults that work out of the box. If you need to customize settings, create a `.env` file from `.env.example`:
 
@@ -91,8 +72,58 @@ cp .env.example .env
 - `FRONTEND_PORT` - Frontend port (default: 3000)
 - `BACKEND_PORT` - Backend API port (default: 8080)
 
+
 **CORS Configuration:**
 - `CORS_ALLOWED_ORIGINS` - Allowed origins for CORS (default: http://localhost:5173,http://localhost:3000)
 
 **JWT Configuration:**
 - `JWT_SECRET` - Secret key for JWT tokens
+
+</details>
+
+## Usage
+
+### Instructions using web client
+After registration (in the web client or locally), start by creating a new project and continue by uploading your Bradford assay picture. The next steps will be explained to you along the way in the application itself.
+
+### API endpoints
+An extensive API endpoint library was prepared for this project, the documentation and schemas can be accessed in an OpenAPI format via SwaggerUI: <a href="https://rgbradford-backend.onrender.com/swagger-ui/index.html">https://rgbradford-backend.onrender.com/swagger-ui/index.html</a> or locally. You are welcome to use the library to integrate this project with existing scientific software.
+
+
+## Contributing
+### Limitations and suggestions
+<p>Vilnius-Lithuania iGEM 2025 team gladly welcomes any contributions towards the tool’s further development. The limitations and future suggestions of features to be implemented in the project are described <a href="https://2025.igem.wiki/vilnius-lithuania/software/">here</a>, however suggestions that are not listed in the documentation are appreciated.</p>
+<p>Please refer to the current version of the software tool in the repository, where key feature updates are described in each release and some proposed improvements may have already been implemented.</p>
+
+### Instructions
+<OL>
+   <li>Fork the repository</li>
+   <li>Commit your changes</li>
+   <li>Document your code and provide a description in the pull request</li>
+   <li>Contact us to review the code and implement the changes</li>
+</OL>
+
+
+
+
+## Authors and acknowledgment
+<p>The authors of this project are:</p>
+<table>
+<thead>
+<tr>
+<th>Responsibilities</th>
+<th>Name, surname</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>System engineering, backend development, UI design,  documentation</td>
+<td>Augustė Tumaitė (<a href="https://github.com/augustetum">https://github.com/augustetum</a>)</td>
+</tr>
+<tr>
+<td>Frontend development, UI design</td>
+<td>Augustas Rinkevičius (<a href="https://github.com/augustusthebirb">https://github.com/augustusthebirb</a>)</td>
+</tr>
+</tbody>
+</table>
+
