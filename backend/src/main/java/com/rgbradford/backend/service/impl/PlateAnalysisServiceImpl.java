@@ -119,7 +119,7 @@ public class PlateAnalysisServiceImpl implements PlateAnalysisService {
         int yOrigin = params.getYOrigin();
         int xEnd = params.getXEnd();
         int yEnd = params.getYEnd();
-        int circleSize = (int) Math.round(params.getWellDiameter() * 0.85);
+        int circleSize = (int) Math.round(params.getWellDiameter() * 0.55);
 
         ImagePlus imp = openAndPrepareImage(imageInputStream);
         

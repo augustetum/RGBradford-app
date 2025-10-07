@@ -42,9 +42,9 @@ services:
       - key: CORS_ALLOWED_ORIGINS
         sync: false
       # File upload limits
-      - key: MAX_FILE_SIZE
+      - key: SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE
         value: 10MB
-      - key: MAX_REQUEST_SIZE
+      - key: SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE
         value: 10MB
 
   # Frontend - React + Nginx
