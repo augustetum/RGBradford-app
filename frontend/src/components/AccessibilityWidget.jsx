@@ -225,7 +225,7 @@ export function AccessibilityWidget({
         className={
           hideAccessibilityWidget
             ? "hidden"
-              : "bg-transparent hover:bg-transparent fixed bottom-10 left-4 p-3 hover:scale-105 z-[60] w-20 h-20"
+              : "bg-transparent hover:bg-transparent fixed bottom-10 left-2 p-3 hover:scale-105 z-[60] w-20 h-20"
         }
         aria-label="Open Accessibility Options"
       >

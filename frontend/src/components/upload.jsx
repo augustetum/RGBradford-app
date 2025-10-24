@@ -25,6 +25,7 @@ function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) 
   const [selectionOld, setOldSelection] = useState(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const canvasRef = useRef(null)
+  const cvDataRef = useRef(null); // Store CV values for each well
   const [sizeMode, setSizeMode] = useState(false);
   const [sizeLine, setSizeLine] = useState(null); // { x1, y1, x2, y2 }
   const [measuredDistance, setMeasuredDistance] = useState(null);
@@ -33,10 +34,12 @@ function Upload({setCurrentScreen, showNotification, showLoading, hideLoading}) 
   const [name, setName] = useState();
   const [description, setDescription] = useState();
   const [projectId, setProjectId] = useState(); 
-  const [rowCount, setRowCount] = useState(8); 
-  const [columnCount, setColumnCount] = useState(12); 
+  const [rowCount, setRowCount] = useState(8);
+  const [columnCount, setColumnCount] = useState(12);
   const [plateId, setPlateId] = useState();
-  
+  const [showQualityCheck, setShowQualityCheck] = useState(true);
+  const [hoveredWell, setHoveredWell] = useState(null); // { row, col, cv }
+
   const getFileExtension = (mimeType) => {
     const extensions = {
       'image/jpeg': 'jpg',
@@ -272,25 +275,98 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         img.src = src;
       });
     }, []);
-    
+
+    // Helper function to get pixels within a circular region
+    const getCirclePixels = (imageData, centerX, centerY, radius) => {
+      const pixels = [];
+      const minX = Math.floor(centerX - radius);
+      const maxX = Math.ceil(centerX + radius);
+      const minY = Math.floor(centerY - radius);
+      const maxY = Math.ceil(centerY + radius);
+      const radiusSquared = radius * radius;
+
+      for (let y = minY; y <= maxY; y++) {
+        for (let x = minX; x <= maxX; x++) {
+          const dx = x - centerX;
+          const dy = y - centerY;
+          const distSquared = dx * dx + dy * dy;
+
+          if (distSquared <= radiusSquared) {
+            const index = (y * imageData.width + x) * 4;
+            if (index >= 0 && index < imageData.data.length) {
+              const r = imageData.data[index];
+              const g = imageData.data[index + 1];
+              const b = imageData.data[index + 2];
+              pixels.push({ r, g, b });
+            }
+          }
+        }
+      }
+      return pixels;
+    };
+
+    // Calculate coefficient of variation for green/blue ratio
+    const calculateGreenBlueCV = (pixels) => {
+      const ratios = [];
+
+      for (const pixel of pixels) {
+        if (pixel.b > 0) { // Exclude pixels where blue = 0
+          ratios.push(pixel.g / pixel.b);
+        }
+      }
+
+      if (ratios.length === 0) return null;
+
+      // Calculate mean
+      const mean = ratios.reduce((sum, val) => sum + val, 0) / ratios.length;
+
+      // Calculate standard deviation
+      const variance = ratios.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0) / ratios.length;
+      const stdDev = Math.sqrt(variance);
+
+      // Calculate CV
+      const cv = mean !== 0 ? stdDev / mean : 0;
+
+      return cv;
+    };
+
+    // Map CV value to color using continuous HSL gradient
+    // Green (120° hue) at CV=0.0 -> Yellow (60°) at CV=0.125 -> Red (0°) at CV>=0.25
+    const getCVColor = (cv) => {
+      if (cv === null) return 'rgba(128, 128, 128, 0.5)'; // Gray for no data
+
+      // Clamp CV to max of 0.25 for color scale
+      const clampedCV = Math.min(cv, 0.25);
+
+      // Calculate hue: 120 (green) to 0 (red) based on CV
+      // At CV=0.0: hue=120 (green)
+      // At CV=0.125: hue=60 (yellow)
+      // At CV=0.25: hue=0 (red)
+      const hue = Math.max(0, 120 - (clampedCV / 0.25) * 120);
+
+      return `hsla(${hue}, 100%, 50%, 0.5)`;
+    };
+
     const draw = useCallback(async () => {
       const canvas = canvasRef.current;
       if (!canvas) return;
-      
+
       const ctx = canvas.getContext("2d");
-      
+
       const img = await loadImage(displayedImage);
       const width = img.naturalWidth || img.width;
       const height = img.naturalHeight || img.height;
-    
+
       canvas.width = width;
       canvas.height = height;
-      
+
       const lineStrokeWidth = Math.max(2,Math.floor(Math.max(width,height)/300))
       const cornerMarkerRadius = Math.max(5,Math.floor(Math.max(width,height)/200))
 
       ctx.clearRect(0, 0, width, height);
       ctx.drawImage(img, 0, 0, width, height);
+
+      // Draw selection overlay
       if (selection) {
         ctx.save();
         ctx.fillStyle = "rgba(0,0,0,0.35)";
@@ -298,14 +374,73 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         ctx.rect(0, 0, width, height);
         ctx.rect(selection.x, selection.y, selection.w, selection.h);
         ctx.fill("evenodd");
-    
+
         ctx.strokeStyle = "red";
         ctx.lineWidth = lineStrokeWidth;
         ctx.setLineDash([6, 4]);
         ctx.strokeRect(selection.x, selection.y, selection.w, selection.h);
         ctx.restore();
       }
-    
+
+      // Draw quality-colored circles
+      if (coordsEnd && coordsOrigin && measuredDistance) {
+        // IMPORTANT: Capture clean image data BEFORE drawing any overlays
+        // This prevents corner markers and other overlays from contaminating quality calculations
+        // Only capture when we actually need it for quality checking (huge performance improvement)
+        const cleanImageData = ctx.getImageData(0, 0, width, height);
+        const offsetX = selectionOld ? selectionOld.x : 0;
+        const offsetY = selectionOld ? selectionOld.y : 0;
+        const diameter = measuredDistance;
+        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1);
+        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1);
+        ctx.lineWidth = lineStrokeWidth;
+
+        // Initialize CV data storage for hover tooltips
+        const cvData = [];
+
+        for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
+          for (let indexRow = 0; indexRow < rowCount; indexRow++) {
+            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX;
+            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY;
+
+            // Conditionally calculate and display quality checking
+            if (showQualityCheck) {
+              // Calculate quality for the inner 50% of the circle (radius = 0.25 * diameter)
+              const innerRadius = diameter * 0.25;
+              const pixels = getCirclePixels(cleanImageData, coordX, coordY, innerRadius);
+              const cv = calculateGreenBlueCV(pixels);
+              const fillColor = getCVColor(cv);
+
+              // Store CV data for hover tooltips
+              cvData.push({
+                row: indexRow,
+                col: indexColumn,
+                cv: cv,
+                x: coordX,
+                y: coordY,
+                radius: diameter / 2
+              });
+
+              // Fill circle with quality color
+              ctx.fillStyle = fillColor;
+              ctx.beginPath();
+              ctx.arc(coordX, coordY, diameter/2, 0, Math.PI*2);
+              ctx.fill();
+            }
+
+            // Always draw circle outline
+            ctx.beginPath();
+            ctx.arc(coordX, coordY, diameter/2, 0, Math.PI*2);
+            ctx.stroke();
+
+          }
+        }
+
+        // Store CV data in ref for hover detection
+        cvDataRef.current = showQualityCheck ? cvData : null;
+      }
+
+      // Draw corner markers AFTER quality circles (drawn on top)
       if (coordsOrigin) {
         ctx.beginPath();
         ctx.fillStyle = "green";
@@ -320,11 +455,13 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         else ctx.arc(coordsEnd.x-selectionOld.x, coordsEnd.y-selectionOld.y, cornerMarkerRadius, 0, Math.PI * 2);
         ctx.fill();
       }
+
+      // Draw size line AFTER everything else
       if (sizeLine) {
         ctx.beginPath();
         ctx.strokeStyle = "red";
         ctx.lineWidth = lineStrokeWidth;
-        ctx.setLineDash([]); 
+        ctx.setLineDash([]);
         if (!selectionOld || sizeMode) {
           ctx.moveTo(sizeLine.x1, sizeLine.y1);
           ctx.lineTo(sizeLine.x2, sizeLine.y2);
@@ -334,28 +471,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         }
         ctx.stroke();
       }
-
-      if (coordsEnd && coordsOrigin && measuredDistance) {
-        const offsetX = selectionOld ? selectionOld.x : 0
-        const offsetY = selectionOld ? selectionOld.y : 0
-        const diameter = measuredDistance
-        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
-        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
-        ctx.lineWidth = lineStrokeWidth;
-
-        for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
-          for (let indexRow = 0; indexRow < rowCount; indexRow++) {
-            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
-            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY
-            ctx.beginPath();
-            ctx.arc(coordX, coordY,
-                    diameter/2,0,Math.PI*2)
-            ctx.stroke()
-            
-          }
-        }
-      }
-    }, [displayedImage, selection, coordsOrigin, coordsEnd, loadImage, sizeLine]);
+    }, [displayedImage, selection, coordsOrigin, coordsEnd, loadImage, sizeLine, rowCount, columnCount, selectionOld, measuredDistance, showQualityCheck]);
     
     useEffect(() => {
       if (displayedImage) {
@@ -416,7 +532,35 @@ const handleFinalSubmit = async (updatedWellCenters) => {
       }
       setIsDrawing(false);
       };
-    const onPointerLeave = () => setIsDrawing(false);
+    const onPointerLeave = () => {
+      setIsDrawing(false);
+      setHoveredWell(null);
+    };
+
+    // Handle hover to show CV tooltip
+    const onCanvasHover = (e) => {
+      // Only process hover if quality check is enabled and we have CV data
+      if (!showQualityCheck || !cvDataRef.current || uploadStage !== 'parameters') {
+        setHoveredWell(null);
+        return;
+      }
+
+      const { x, y } = getPointerPos(e, canvasRef);
+
+      // Check if mouse is over any well
+      for (const wellData of cvDataRef.current) {
+        const dx = x - wellData.x;
+        const dy = y - wellData.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance <= wellData.radius) {
+          setHoveredWell(wellData);
+          return;
+        }
+      }
+
+      setHoveredWell(null);
+    };
   
     const crop = async () => {
       if (!selection || selection.w === 0 || selection.h === 0) return;
@@ -462,19 +606,19 @@ const handleFinalSubmit = async (updatedWellCenters) => {
 
     const handleSubmit = () => {
       if (coordsEnd && coordsOrigin && measuredDistance) {
-        const offsetX = 0
-        const offsetY = 0
-        const diameter = measuredDistance
-        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1) 
-        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1) 
+        const offsetX = 0;
+        const offsetY = 0;
+        const diameter = measuredDistance;
+        const gapX = (Math.abs(coordsOrigin.x-coordsEnd.x)-(columnCount-1)*diameter)/(columnCount-1);
+        const gapY = (Math.abs(coordsOrigin.y-coordsEnd.y)-(rowCount-1)*diameter)/(rowCount-1);
         for (let indexColumn = 0; indexColumn < columnCount; indexColumn++) {
           for (let indexRow = 0; indexRow < rowCount; indexRow++) {
-            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX
-            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY     
-            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn, 'indexRow' : indexRow}]))
+            let coordX = coordsOrigin.x + diameter*indexColumn + gapX*indexColumn - offsetX;
+            let coordY = coordsOrigin.y + diameter*indexRow + gapY*indexRow - offsetY;
+            setWellCenters(prev => ([...prev, {'x':coordX, 'y':coordY, 'indexColumn' : indexColumn, 'indexRow' : indexRow}]));
           }
         }
-        reset()
+        reset();
         setUploadStage('wellSelection');
       }
     }
@@ -536,11 +680,16 @@ const handleFinalSubmit = async (updatedWellCenters) => {
 
       {image && (uploadStage === 'parameters' || uploadStage === 'crop') && (
         <div className="mb-6">
-          <div className="p-2 bg-igem-gray rounded-xl flex flex-col">
+          <div className="p-2 bg-igem-gray rounded-xl flex flex-col relative">
             <canvas
               ref={canvasRef}
               onPointerDown={onPointerDown}
-              onPointerMove={onPointerMove}
+              onPointerMove={(e) => {
+                onPointerMove(e);
+                if (uploadStage === 'parameters') {
+                  onCanvasHover(e);
+                }
+              }}
               onPointerUp={onPointerUp}
               onPointerLeave={onPointerLeave}
               className="border rounded-2xl shadow w-auto h-full touch-none"
@@ -549,6 +698,11 @@ const handleFinalSubmit = async (updatedWellCenters) => {
             {uploadStage === 'parameters' && (
               <p className="mt-4 !text-igem-black text-lg font-mono">
                 Clicked at: ({coords.x}, {coords.y})
+                {hoveredWell && showQualityCheck && (
+                  <span className="ml-4 text-white bg-black/80 px-3 py-1 rounded">
+                    CV: {hoveredWell.cv !== null ? hoveredWell.cv.toFixed(4) : 'N/A'}
+                  </span>
+                )}
               </p>
             )}
           </div>
@@ -556,7 +710,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
       )}
         
       {(uploadStage === 'crop') && (
-      <Crop 
+      <Crop
         setImage={setImage}
         toggleSelectMode={toggleSelectMode}
         setSizeMode={setSizeMode}
@@ -570,6 +724,7 @@ const handleFinalSubmit = async (updatedWellCenters) => {
         setSelectMode={setSelectMode}
         setOriginalImage={setOriginalImage}
         setOldSelection={setOldSelection}
+        setSelection={setSelection}
       />
     )}
 
@@ -596,6 +751,8 @@ const handleFinalSubmit = async (updatedWellCenters) => {
           measuredDistance={measuredDistance}
           setColumnCount={setColumnCount}
           setRowCount={setRowCount}
+          showQualityCheck={showQualityCheck}
+          setShowQualityCheck={setShowQualityCheck}
         />
       )}
 

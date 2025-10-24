@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { API_BASE_URL } from "../config";
 
-function Account({data, onLogout}) {
+function Account({onLogout}) {
     const [oldPassword, setOldPassword] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
