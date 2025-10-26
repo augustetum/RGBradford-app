@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import Footer from './components/footer.jsx'
 import Hero from './components/hero.jsx'
-import data from './data.js'
 import ProjectList from './components/projectList.jsx'
 import Project from './components/project.jsx'
 import { AnimatePresence, motion } from 'framer-motion';
@@ -138,14 +137,14 @@ function App() {
         <Login setCurrentScreen={setCurrentScreen} onLogin={handleLogin}/>
       )}
       {currentScreen === 'catalog' && isAuthenticated && (<div className="text-base">
-      <Hero name={data.name}/>
+      <Hero/>
       <ProjectList setNotification={setNotification} showLoading={showLoading} projects={projects} setProjects={setProjects} handleSwitch={handleSwitch}/>
       </div>)}
       {currentScreen === 'project' && isAuthenticated && (
         <Project project={projects[currentProject]}/>
       )}
       {currentScreen === 'account' && isAuthenticated && (
-        <Account data={data} onLogout={handleLogout}/>
+        <Account onLogout={handleLogout}/>
       )}
       {currentScreen === 'upload' && isAuthenticated && (
         <Upload showNotification={showNotification} showLoading={showLoading} hideLoading={hideLoading} setCurrentScreen={setCurrentScreen}/>

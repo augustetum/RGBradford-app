@@ -14,6 +14,7 @@ function Crop({
   setSelectMode,
   setOriginalImage,
   setOldSelection,
+  setSelection,
 }) {
   return (
     <div className="w-[min(90vw,50rem)] flex gap-4 justify-center mt-6 flex-wrap text-base">
@@ -49,6 +50,7 @@ function Crop({
           setRefFromUrl(displayedImage);
           setUploadStage('parameters');
           setSelectMode(false);
+          setSelection(null); 
           setImage(displayedImage);
           setOriginalImage(displayedImage);
           setOldSelection(null);

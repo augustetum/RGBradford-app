@@ -22,10 +22,12 @@ const Parameters = ({
   measuredDistance,
   setRowCount,
   setColumnCount,
+  showQualityCheck,
+  setShowQualityCheck,
 }) => {
   return (
     <div className="w-[min(90vw,50rem)] text-base">
-          <div className="flex gap-4 justify-center mt-6 flex-wrap">
+          <div className="flex gap-4 justify-center mt-6 flex-wrap items-center">
             <button
           onClick={() => {toggleSelectMode(); setSizeMode(false);}}
           className={`btn text-base ${
@@ -47,6 +49,15 @@ const Parameters = ({
         >
           Reset Zoom
         </button>
+        <label className="flex items-center gap-2 text-base cursor-pointer text-white">
+          <input
+            type="checkbox"
+            checked={showQualityCheck}
+            onChange={(e) => setShowQualityCheck(e.target.checked)}
+            className="w-4 h-4 cursor-pointer"
+          />
+          Show Quality Check
+        </label>
           </div>
       <div className="flex gap-4 justify-center mt-6 flex-wrap">
         <button onClick={() => {setCoordsOrigin({ ...coords });}} className="btn text-base">
