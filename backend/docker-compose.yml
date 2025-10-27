@@ -10,13 +10,13 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
       
       # Azure SQL Database connection
-      - SPRING_DATASOURCE_URL=${DATABASE_URL:-jdbc:sqlserver://rgbradford-server.database.windows.net:1433;database=rgbradford-production;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;}
+      - SPRING_DATASOURCE_URL=${DATABASE_URL:-postgresql://rgbradford_app:d2XTXFwlmixNcrSFTHMRs6TRUOvrufn1@dpg-d3vtr2pr0fns738bqnt0-a/rgbradford}
       - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME:-rgbradford_app}
       - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
-      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DATABASE_DRIVER:-com.microsoft.sqlserver.jdbc.SQLServerDriver}
+      - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DATABASE_DRIVER:-org.postgresql.Driver}
       
       # JPA/Hibernate configuration for SQL Server
-      - SPRING_JPA_DATABASE_PLATFORM=${JPA_DIALECT:-org.hibernate.dialect.SQLServerDialect}
+      - SPRING_JPA_DATABASE_PLATFORM=${JPA_DIALECT:-org.hibernate.dialect.PostgreSQLDialect}
       - SPRING_JPA_HIBERNATE_DDL_AUTO=${JPA_DDL_AUTO:-validate}
       - SPRING_JPA_SHOW_SQL=${JPA_SHOW_SQL:-false}
 
@@ -33,5 +33,5 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       
       # File upload limits
-      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=${MAX_FILE_SIZE:-10MB}
-      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-10MB}
+      - SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE=${MAX_FILE_SIZE:-25MB}
+      - SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE=${MAX_REQUEST_SIZE:-25MB}
