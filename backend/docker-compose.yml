@@ -10,7 +10,7 @@ services:
       - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE:-prod}
       
       # Azure SQL Database connection
-      - SPRING_DATASOURCE_URL=${DATABASE_URL:-postgresql://rgbradford_app:d2XTXFwlmixNcrSFTHMRs6TRUOvrufn1@dpg-d3vtr2pr0fns738bqnt0-a/rgbradford}
+      - SPRING_DATASOURCE_URL=${DATABASE_URL:-jdbc:postgresql://rgbradford_app:d2XTXFwlmixNcrSFTHMRs6TRUOvrufn1@dpg-d3vtr2pr0fns738bqnt0-a/rgbradford}
       - SPRING_DATASOURCE_USERNAME=${DATABASE_USERNAME:-rgbradford_app}
       - SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD}
       - SPRING_DATASOURCE_DRIVER_CLASS_NAME=${DATABASE_DRIVER:-org.postgresql.Driver}
